@@ -94,14 +94,17 @@
         <article class="card frame camera-card">
           <div class="card-head">
             <h3>CAMERA</h3>
-            <span id="clockLabel">15:42:31</span>
+            <div class="camera-head-right">
+              <span class="cam-pill" id="camPill"><span class="cam-dot"></span><span id="camPillText">CONNECTING</span></span>
+              <span id="clockLabel">15:42:31</span>
+            </div>
           </div>
           <img id="cameraStream" class="camera-image camera-stream" alt="Live camera stream" />
           <video id="cameraVideo" class="camera-image camera-video" autoplay muted playsinline></video>
           <img id="cameraFallback" class="camera-image" src="https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=80" alt="Voortuin camera" />
           <div class="camera-foot">
             <span>VOORTUIN</span>
-            <span id="cameraState" class="live">LIVE</span>
+            <span id="cameraState" class="live">VERBINDEN...</span>
           </div>
         </article>
 

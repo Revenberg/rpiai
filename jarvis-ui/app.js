@@ -9,6 +9,8 @@ const cameraStreamEl = document.getElementById("cameraStream");
 const cameraVideoEl = document.getElementById("cameraVideo");
 const cameraFallbackEl = document.getElementById("cameraFallback");
 const cameraStateEl = document.getElementById("cameraState");
+const camPillEl = document.getElementById("camPill");
+const camPillTextEl = document.getElementById("camPillText");
 
 const DEFAULT_CAMERA_STREAM_URL = "http://localhost:8081/?action=stream";
 
@@ -111,6 +113,12 @@ function setCameraState(text, offline = false) {
 
   cameraStateEl.textContent = text;
   cameraStateEl.classList.toggle("offline", offline);
+
+  if (camPillEl && camPillTextEl) {
+    camPillTextEl.textContent = offline ? "OFFLINE" : "ACTIVE";
+    camPillEl.classList.remove("on", "off");
+    camPillEl.classList.add(offline ? "off" : "on");
+  }
 }
 
 function hideCameraSources() {
@@ -173,7 +181,7 @@ async function tryNetworkStream() {
     hideCameraSources();
     cameraStreamEl.classList.add("live");
     cameraFallbackEl.classList.add("camera-hidden");
-    setCameraState("LIVE STREAM");
+    setCameraState("LIVE STREAM (8081)");
     return true;
   } catch {
     cameraStreamEl.classList.remove("live");
@@ -188,6 +196,10 @@ async function initCamera() {
   }
 
   setCameraState("VERBINDEN...");
+  if (camPillEl && camPillTextEl) {
+    camPillTextEl.textContent = "CONNECTING";
+    camPillEl.classList.remove("on", "off");
+  }
 
   const hasNetworkStream = await tryNetworkStream();
   if (hasNetworkStream) {
@@ -213,7 +225,7 @@ async function initCamera() {
     cameraVideoEl.srcObject = stream;
     cameraVideoEl.classList.add("live");
     cameraFallbackEl.classList.add("camera-hidden");
-    setCameraState("LIVE USB");
+    setCameraState("LIVE USB CAMERA");
   } catch {
     hideCameraSources();
     cameraVideoEl.classList.remove("live");

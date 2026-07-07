@@ -550,6 +550,49 @@ h3 {
   align-items: center;
 }
 
+.camera-head-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cam-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(85, 126, 150, 0.45);
+  background: rgba(8, 29, 47, 0.62);
+  color: #89aabf;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.cam-pill.on {
+  border-color: rgba(34, 197, 94, 0.48);
+  background: rgba(34, 197, 94, 0.14);
+  color: #80e7ad;
+}
+
+.cam-pill.off {
+  border-color: rgba(239, 68, 68, 0.46);
+  background: rgba(239, 68, 68, 0.12);
+  color: #f6a3a3;
+}
+
+.cam-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.cam-pill.on .cam-dot {
+  animation: blink 1.8s ease-in-out infinite;
+}
+
 .camera-image {
   width: 100%;
   aspect-ratio: 16 / 9;
@@ -595,6 +638,16 @@ h3 {
 
 .live.offline {
   color: #8ba2b5;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
 }
 
 .actions-card {
