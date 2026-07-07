@@ -1,0 +1,14 @@
+services:
+  samatha-ai:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: samatha-ai
+    restart: unless-stopped
+    ports:
+      - "3000:8080"
+    volumes:
+      - samatha_data:/app/backend/data
+    environment:
+      WEBUI_AUTH: "False"
+
+volumes:
+  samatha_data:
