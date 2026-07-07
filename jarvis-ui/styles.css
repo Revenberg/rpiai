@@ -316,7 +316,47 @@ h3 {
   object-fit: cover;
   object-position: 50% 30%;
   transform: scale(1.12);
-  filter: saturate(1.08) contrast(1.12) brightness(0.82) hue-rotate(-8deg);
+  opacity: 0.22;
+  filter: saturate(0.75) contrast(1.08) brightness(0.66) hue-rotate(-20deg) blur(0.6px);
+}
+
+.avatar-synth {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(124, 223, 255, 0.72), rgba(7, 33, 58, 0.18) 35%, rgba(4, 16, 30, 0.92) 72%),
+    radial-gradient(ellipse at 38% 44%, rgba(115, 228, 255, 0.55), rgba(0, 0, 0, 0) 24%),
+    radial-gradient(ellipse at 62% 44%, rgba(115, 228, 255, 0.55), rgba(0, 0, 0, 0) 24%),
+    radial-gradient(ellipse at 50% 58%, rgba(79, 191, 255, 0.42), rgba(0, 0, 0, 0) 20%),
+    radial-gradient(ellipse at 50% 71%, rgba(102, 228, 255, 0.38), rgba(0, 0, 0, 0) 22%),
+    linear-gradient(180deg, rgba(15, 78, 124, 0.28), rgba(4, 16, 30, 0.86));
+  mix-blend-mode: screen;
+}
+
+.avatar-synth::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 39%;
+  width: 56%;
+  height: 30%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  border-top: 1px solid rgba(135, 229, 255, 0.58);
+  border-bottom: 1px solid rgba(78, 196, 255, 0.22);
+  opacity: 0.75;
+}
+
+.avatar-synth::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 62%;
+  width: 26%;
+  height: 1px;
+  transform: translateX(-50%);
+  background: rgba(121, 225, 255, 0.95);
+  box-shadow: 0 0 10px rgba(121, 225, 255, 0.85);
 }
 
 .avatar-overlay {
