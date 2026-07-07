@@ -233,29 +233,32 @@ Zet het modulair op zodat je met een enkele installer de Pi volledig kunt inrich
 - Raspberry Pi voorbereiden
 - Docker installeren
 - SSH en git workflow werkend maken
+- Remote deploy via Bash en `connect-rpiai.sh`
 
 ### Fase 2 - Samantha backend
 
 - Samantha als centrale AI-laag
 - Gemini als denklaag
 - Home Assistant en Homey koppelingen
+- Context, planning en acties voorbereiden voor de UI
 
 ### Fase 3 - Jarvis UI
 
 - React/Vite dashboard
 - Compacte 3-koloms layout
 - Live status, gesprek, acties en waveform
+- Hosted op `http://localhost:3001`
 
 ```text
-┌──────────────────────────────────────────┐
-│ Status │ Weer │ Energie │ Camera │ Tijd │
-├──────────────────────────────────────────┤
-│                AI Avatar                │
-├──────────────┬───────────────────────────┤
-│ Gesprek      │ Acties                    │
-├──────────────┴───────────────────────────┤
-│ Waveform + Microfoon                     │
-└──────────────────────────────────────────┘
+┌───────────┬───────────────┬───────────────┐
+│ Status    │ Weer / Tijd   │ Energie       │
+├───────────┴───────┬───────┴───────────────┤
+│      AI Avatar    │        Camera         │
+├───────────────────┬┴──────────────────────┤
+│ Gesprek           │ Acties                │
+├───────────────────┴───────────────────────┤
+│ Waveform + Microfoon                      │
+└───────────────────────────────────────────┘
 ```
 
 ### Fase 4 - AI Avatar
@@ -263,13 +266,25 @@ Zet het modulair op zodat je met een enkele installer de Pi volledig kunt inrich
 - Geen foto, alleen synthetische avatar
 - Three.js of VRM/WebGL
 - Idle, luisteren, denken, spreken, bevestigen, alarm
+- Neus, ogen en mond blijven centraal en holografisch
 
 ### Fase 5 - Realtime communicatie
 
 - Alles via WebSocket
 - Events voor speech, action, presence, energy en camera
+- UI blijft live zonder page refresh
 
 ### Fase 6 - Samantha integratie
 
 - Samantha beheert gesprek, Gemini, context en planning
 - UI rendert alleen `text`, `emotion`, `speaking`, `actions`, `thinking`
+- Samantha blijft de enige bron van waarheid voor intentie en respons
+
+### Implementatievolgorde
+
+1. Infrastructuur op de Pi vastzetten
+2. Samantha backend en koppelingen stabiliseren
+3. Jarvis UI op 3001 openen en compact houden
+4. Avatar synthetisch maken zonder foto
+5. WebSocket events koppelen aan de UI
+6. Samantha-output direct renderen in de UI
