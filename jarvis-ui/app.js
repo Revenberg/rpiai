@@ -5,9 +5,12 @@ const bottomNavEl = document.getElementById("bottomNav");
 const clockEl = document.getElementById("clockLabel");
 const dayEl = document.getElementById("dayLabel");
 const speechEl = document.getElementById("speechText");
+const cameraStreamEl = document.getElementById("cameraStream");
 const cameraVideoEl = document.getElementById("cameraVideo");
 const cameraFallbackEl = document.getElementById("cameraFallback");
 const cameraStateEl = document.getElementById("cameraState");
+
+const DEFAULT_CAMERA_STREAM_URL = "http://localhost:8081/?action=stream";
 
 const people = [
   { name: "SANDER", home: true },
@@ -101,13 +104,98 @@ function cycleSpeech() {
   speechEl.textContent = speechStates[speechIndex];
 }
 
+function setCameraState(text, offline = false) {
+  if (!cameraStateEl) {
+    return;
+  }
+
+  cameraStateEl.textContent = text;
+  cameraStateEl.classList.toggle("offline", offline);
+}
+
+function hideCameraSources() {
+  if (cameraStreamEl) {
+    cameraStreamEl.classList.remove("live");
+  }
+  if (cameraVideoEl) {
+    cameraVideoEl.classList.remove("live");
+  }
+}
+
+function getStreamUrl() {
+  const url = new URL(window.location.href);
+  const fromQuery = url.searchParams.get("cameraStream");
+  if (fromQuery) {
+    return fromQuery;
+  }
+
+  return DEFAULT_CAMERA_STREAM_URL;
+}
+
+function waitForImageLoad(img, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => {
+      cleanup();
+      reject(new Error("Image stream timeout"));
+    }, timeoutMs);
+
+    function cleanup() {
+      window.clearTimeout(timeoutId);
+      img.removeEventListener("load", onLoad);
+      img.removeEventListener("error", onError);
+    }
+
+    function onLoad() {
+      cleanup();
+      resolve();
+    }
+
+    function onError() {
+      cleanup();
+      reject(new Error("Image stream error"));
+    }
+
+    img.addEventListener("load", onLoad, { once: true });
+    img.addEventListener("error", onError, { once: true });
+  });
+}
+
+async function tryNetworkStream() {
+  if (!cameraStreamEl) {
+    return false;
+  }
+
+  const streamUrl = getStreamUrl();
+  cameraStreamEl.src = streamUrl;
+
+  try {
+    await waitForImageLoad(cameraStreamEl, 3500);
+    hideCameraSources();
+    cameraStreamEl.classList.add("live");
+    cameraFallbackEl.classList.add("camera-hidden");
+    setCameraState("LIVE STREAM");
+    return true;
+  } catch {
+    cameraStreamEl.classList.remove("live");
+    cameraStreamEl.removeAttribute("src");
+    return false;
+  }
+}
+
 async function initCamera() {
   if (!cameraVideoEl || !cameraFallbackEl || !cameraStateEl) {
     return;
   }
 
+  setCameraState("VERBINDEN...");
+
+  const hasNetworkStream = await tryNetworkStream();
+  if (hasNetworkStream) {
+    return;
+  }
+
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    cameraStateEl.textContent = "OFFLINE";
+    setCameraState("OFFLINE", true);
     return;
   }
 
@@ -121,14 +209,16 @@ async function initCamera() {
       audio: false
     });
 
+    hideCameraSources();
     cameraVideoEl.srcObject = stream;
     cameraVideoEl.classList.add("live");
     cameraFallbackEl.classList.add("camera-hidden");
-    cameraStateEl.textContent = "LIVE";
+    setCameraState("LIVE USB");
   } catch {
+    hideCameraSources();
     cameraVideoEl.classList.remove("live");
     cameraFallbackEl.classList.remove("camera-hidden");
-    cameraStateEl.textContent = "OFFLINE";
+    setCameraState("OFFLINE", true);
   }
 }
 

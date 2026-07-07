@@ -563,7 +563,16 @@ h3 {
   background: #020b14;
 }
 
+.camera-stream {
+  display: none;
+  background: #020b14;
+}
+
 .camera-video.live {
+  display: block;
+}
+
+.camera-stream.live {
   display: block;
 }
 
@@ -582,6 +591,10 @@ h3 {
 .live {
   color: var(--good);
   font-weight: 700;
+}
+
+.live.offline {
+  color: #8ba2b5;
 }
 
 .actions-card {
