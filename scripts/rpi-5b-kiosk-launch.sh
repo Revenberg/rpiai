@@ -70,6 +70,8 @@ while true; do
   "$CHROMIUM_BIN" \
     --kiosk \
     --no-first-run \
+    --use-fake-ui-for-media-stream \
+    --autoplay-policy=no-user-gesture-required \
     --disable-gpu \
     --noerrdialogs \
     --disable-infobars \

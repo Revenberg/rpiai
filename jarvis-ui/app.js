@@ -5,6 +5,9 @@ const bottomNavEl = document.getElementById("bottomNav");
 const clockEl = document.getElementById("clockLabel");
 const dayEl = document.getElementById("dayLabel");
 const speechEl = document.getElementById("speechText");
+const cameraVideoEl = document.getElementById("cameraVideo");
+const cameraFallbackEl = document.getElementById("cameraFallback");
+const cameraStateEl = document.getElementById("cameraState");
 
 const people = [
   { name: "SANDER", home: true },
@@ -98,11 +101,43 @@ function cycleSpeech() {
   speechEl.textContent = speechStates[speechIndex];
 }
 
+async function initCamera() {
+  if (!cameraVideoEl || !cameraFallbackEl || !cameraStateEl) {
+    return;
+  }
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    cameraStateEl.textContent = "OFFLINE";
+    return;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        facingMode: "environment"
+      },
+      audio: false
+    });
+
+    cameraVideoEl.srcObject = stream;
+    cameraVideoEl.classList.add("live");
+    cameraFallbackEl.classList.add("camera-hidden");
+    cameraStateEl.textContent = "LIVE";
+  } catch {
+    cameraVideoEl.classList.remove("live");
+    cameraFallbackEl.classList.remove("camera-hidden");
+    cameraStateEl.textContent = "OFFLINE";
+  }
+}
+
 renderPresence();
 renderMessages();
 renderActions();
 renderNav();
 updateClock();
+initCamera();
 
 setInterval(updateClock, 1000);
 setInterval(cycleSpeech, 3800);
