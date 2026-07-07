@@ -212,14 +212,23 @@ async function initCamera() {
   }
 
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-        facingMode: "environment"
-      },
-      audio: false
-    });
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          facingMode: "environment"
+        },
+        audio: false
+      });
+    } catch {
+      // Some Linux camera drivers do not support facingMode constraints.
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: false
+      });
+    }
 
     hideCameraSources();
     cameraVideoEl.srcObject = stream;
