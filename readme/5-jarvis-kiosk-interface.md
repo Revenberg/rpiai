@@ -216,3 +216,60 @@ Zet het modulair op zodat je met een enkele installer de Pi volledig kunt inrich
 - Containers starten (Samantha, JarvisUI, extra services)
 - Chromium kioskmodus configureren
 - Dashboard automatisch laten verschijnen bij opstarten
+
+## Project-roadmap
+
+| Fase | Focus | Kerntechnologie | Output |
+| --- | --- | --- | --- |
+| Fase 1 | Basisinfrastructuur | Pi, Docker, SSH, Git, Bash | Werkende host + deploy flow |
+| Fase 2 | Samantha backend | Gemini, Home Assistant, Homey | AI-kern met context en acties |
+| Fase 3 | Jarvis UI | React, Vite, Tailwind, Framer Motion, Three.js, WebSocket | Compact dashboard op 3001 |
+| Fase 4 | AI Avatar | Three.js, VRM, WebGL | Synthetische avatar zonder foto |
+| Fase 5 | Realtime communicatie | WebSocket | Live events tussen backend en UI |
+| Fase 6 | Samantha integratie | Samantha, context, planning | Samantha levert output aan de UI |
+
+### Fase 1 - Basisinfrastructuur
+
+- Raspberry Pi voorbereiden
+- Docker installeren
+- SSH en git workflow werkend maken
+
+### Fase 2 - Samantha backend
+
+- Samantha als centrale AI-laag
+- Gemini als denklaag
+- Home Assistant en Homey koppelingen
+
+### Fase 3 - Jarvis UI
+
+- React/Vite dashboard
+- Compacte 3-koloms layout
+- Live status, gesprek, acties en waveform
+
+```text
+┌──────────────────────────────────────────┐
+│ Status │ Weer │ Energie │ Camera │ Tijd │
+├──────────────────────────────────────────┤
+│                AI Avatar                │
+├──────────────┬───────────────────────────┤
+│ Gesprek      │ Acties                    │
+├──────────────┴───────────────────────────┤
+│ Waveform + Microfoon                     │
+└──────────────────────────────────────────┘
+```
+
+### Fase 4 - AI Avatar
+
+- Geen foto, alleen synthetische avatar
+- Three.js of VRM/WebGL
+- Idle, luisteren, denken, spreken, bevestigen, alarm
+
+### Fase 5 - Realtime communicatie
+
+- Alles via WebSocket
+- Events voor speech, action, presence, energy en camera
+
+### Fase 6 - Samantha integratie
+
+- Samantha beheert gesprek, Gemini, context en planning
+- UI rendert alleen `text`, `emotion`, `speaking`, `actions`, `thinking`
