@@ -10,5 +10,14 @@ services:
     environment:
       WEBUI_AUTH: "False"
 
+  jarvis-ui:
+    image: nginx:alpine
+    container_name: jarvis-ui
+    restart: unless-stopped
+    ports:
+      - "3001:80"
+    volumes:
+      - ./jarvis-ui:/usr/share/nginx/html:ro
+
 volumes:
   samatha_data:

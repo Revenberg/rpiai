@@ -18,7 +18,7 @@ Na boot van de Raspberry Pi:
 1. Docker start op de host.
 2. Samatha container draait.
 3. Chromium start automatisch in kioskmodus.
-4. Dashboard opent op http://localhost:3000.
+4. Dashboard opent op http://localhost:3001.
 
 ## Eenmalige Setup Op Raspberry Pi
 
@@ -32,13 +32,13 @@ chmod +x scripts/rpi-4-deploy-samatha.sh \
 
 ./scripts/rpi-4-deploy-samatha.sh
 ./scripts/rpi-verify-samatha.sh
-./scripts/rpi-5b-setup-kiosk.sh http://localhost:3000 pi
+./scripts/rpi-5b-setup-kiosk.sh http://localhost:3001 pi
 ```
 
 Als je username niet pi is:
 
 ```bash
-./scripts/rpi-5b-setup-kiosk.sh http://localhost:3000 <your-user>
+./scripts/rpi-5b-setup-kiosk.sh http://localhost:3001 <your-user>
 ```
 
 ## Wat Het Kiosk Setup Script Doet
@@ -58,7 +58,7 @@ sudo reboot
 
 Na reboot:
 
-- Desktop login opent Chromium in fullscreen op http://localhost:3000.
+- Desktop login opent Chromium in fullscreen op http://localhost:3001.
 - Samatha blijft beschikbaar op poort 3000.
 
 ## Dagelijkse Bedienacties
@@ -90,13 +90,13 @@ Via Git Bash en je connect script:
 
 ## Browser Toegang
 
-- Lokaal op Pi scherm (kiosk): http://localhost:3000
-- Vanaf laptop/desktop in hetzelfde netwerk: http://rpiai.local:3000
+- Lokaal op Pi scherm (kiosk): http://localhost:3001
+- Vanaf laptop/desktop in hetzelfde netwerk: http://rpiai.local:3001
 
 Als mDNS niet werkt, gebruik het Pi IP-adres:
 
 ```text
-http://<pi-ip>:3000
+http://<pi-ip>:3001
 ```
 
 ## Troubleshooting
@@ -111,5 +111,5 @@ http://<pi-ip>:3000
 
 3. Browser vanaf netwerk werkt niet:
 - Test poort vanaf Windows:
-- Test-NetConnection rpiai.local -Port 3000
+- Test-NetConnection rpiai.local -Port 3001
 - Controleer firewall/router instellingen

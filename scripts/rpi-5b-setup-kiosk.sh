@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-KIOSK_URL="${1:-http://localhost:3000}"
+KIOSK_URL="${1:-http://localhost:3001}"
 TARGET_USER="${2:-${SUDO_USER:-$USER}}"
 
 if [[ "$(uname -s)" != "Linux" ]]; then

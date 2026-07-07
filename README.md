@@ -193,5 +193,5 @@ Containers stay on host (Docker Compose); automation stays in scripts.
 ./scripts/rpi-verify-samatha.sh
 
 # 4) Configure kiosk autostart
-./scripts/rpi-5b-setup-kiosk.sh http://localhost:3000 pi
+./scripts/rpi-5b-setup-kiosk.sh http://localhost:3001 pi
 ```

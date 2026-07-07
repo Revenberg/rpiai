@@ -17,7 +17,7 @@ Raspberry Pi 4
 Chromium opent automatisch:
 
 ```text
-http://localhost:3000
+http://localhost:3001
 ```
 
 Daar draait de JARVIS-interface.
@@ -96,7 +96,7 @@ chromium \
   --kiosk \
   --noerrdialogs \
   --disable-infobars \
-  http://localhost:3000
+  http://localhost:3001
 ```
 
 Voor een volledig herhaalbare setup met scripts, zie:
@@ -178,11 +178,15 @@ EXPOSE 80
 
 ```yaml
 services:
-  jarvis-ui:
-    build: .
-    container_name: jarvis-ui
+  samatha-ai:
+    image: ghcr.io/open-webui/open-webui:main
     ports:
-      - "3000:80"
+      - "3000:8080"
+
+  jarvis-ui:
+    image: nginx:alpine
+    ports:
+      - "3001:80"
     restart: unless-stopped
 ```
 

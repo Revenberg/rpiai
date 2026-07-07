@@ -10,7 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEFAULT_PASSWORD_FILE="$SCRIPT_DIR/../rpiai.password"
 PASSWORD_FILE="${PASSWORD_FILE:-$DEFAULT_PASSWORD_FILE}"
 PI_USER="${PI_USER:-${1:-pi}}"
-PI_HOST="${PI_HOST:-${2:-rpiai.local}}"
+PI_HOST="${PI_HOST:-${2:-192.168.1.1}}"
 if [[ -n "${REMOTE_CMD:-}" ]]; then
   REMOTE_CMD="$REMOTE_CMD"
 elif [[ $# -ge 3 ]]; then
@@ -58,6 +58,11 @@ if [[ -n "$SSHPASS_BIN" && -f "$PASSWORD_FILE" ]]; then
 fi
 
 run_ssh() {
+  # Prefer key-based SSH when configured; fallback to sshpass/password file.
+  if ssh -o BatchMode=yes "${SSH_OPTS[@]}" "$@" 2>/dev/null; then
+    return 0
+  fi
+
   if [[ "$USE_SSHPASS" -eq 1 ]]; then
     "$SSHPASS_BIN" -p "$PASSWORD" ssh "${SSH_OPTS[@]}" "$@"
   else
