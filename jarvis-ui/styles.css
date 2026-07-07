@@ -307,32 +307,47 @@ h3 {
   overflow: hidden;
 }
 
-.avatar-face {
+.avatar-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(1.05) contrast(1.05) brightness(0.9);
+}
+
+.avatar-overlay {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 50% 32%, rgba(87, 173, 229, 0.75), rgba(10, 31, 51, 0.15) 35%),
-    linear-gradient(180deg, rgba(18, 48, 74, 0.75), rgba(5, 16, 30, 0.9));
+    radial-gradient(circle at 50% 16%, rgba(132, 217, 255, 0.45), rgba(20, 88, 132, 0.05) 32%),
+    linear-gradient(180deg, rgba(5, 22, 38, 0.06), rgba(3, 19, 33, 0.52)),
+    repeating-linear-gradient(
+      180deg,
+      rgba(112, 209, 255, 0.08) 0 2px,
+      rgba(0, 0, 0, 0) 2px 5px
+    );
+  mix-blend-mode: screen;
 }
 
-.avatar-face::before,
-.avatar-face::after {
+.avatar-overlay::before,
+.avatar-overlay::after {
   content: "";
   position: absolute;
-  top: 40%;
-  width: 12%;
-  height: 6%;
+  top: 41%;
+  width: 9%;
+  height: 4%;
   border-radius: 50%;
-  background: #72dfff;
-  box-shadow: 0 0 18px rgba(114, 223, 255, 0.9);
+  background: rgba(137, 224, 255, 0.95);
+  box-shadow: 0 0 16px rgba(114, 223, 255, 0.9);
 }
 
-.avatar-face::before {
-  left: 32%;
+.avatar-overlay::before {
+  left: 34%;
 }
 
-.avatar-face::after {
-  right: 32%;
+.avatar-overlay::after {
+  right: 34%;
 }
 
 .hero-right {
