@@ -12,7 +12,7 @@ const cameraStateEl = document.getElementById("cameraState");
 const camPillEl = document.getElementById("camPill");
 const camPillTextEl = document.getElementById("camPillText");
 
-const DEFAULT_CAMERA_STREAM_URL = "http://localhost:8081/?action=stream";
+const DEFAULT_CAMERA_STREAM_URL = "http://localhost:8081/stream.mjpg";
 
 const people = [
   { name: "SANDER", home: true },
