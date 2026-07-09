@@ -18,7 +18,7 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.35;
 
-const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 30);
+const camera = new THREE.PerspectiveCamera(24, 1, 0.1, 30);
 camera.position.set(0, 1.42, 1.25);
 
 const keyLight = new THREE.DirectionalLight(0x93e5ff, 1.6);
@@ -94,13 +94,13 @@ function frameVrm(root) {
 
   // Normalize model origin so camera framing is reliable across different VRM exports.
   root.position.sub(tmpCenter);
-  const targetY = THREE.MathUtils.clamp(tmpSize.y * 0.08, 0.02, 0.18);
+  const targetY = THREE.MathUtils.clamp(tmpSize.y * 0.18, 0.1, 0.34);
   const fovRad = (camera.fov * Math.PI) / 180;
   const distance = (tmpSize.y * 0.5) / Math.tan(fovRad * 0.5);
 
   camera.near = 0.01;
   camera.far = 100;
-  camera.position.set(0, targetY, Math.max(distance * 0.78, 0.78));
+  camera.position.set(0, targetY, Math.max(distance * 0.58, 0.55));
   camera.lookAt(0, targetY, 0);
   camera.updateProjectionMatrix();
   return true;
