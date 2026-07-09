@@ -44,6 +44,10 @@ const expressionState = {
 };
 let renderProbeReady = false;
 
+window.__vrmScene = scene;
+window.__vrmCamera = camera;
+window.__vrmRenderer = renderer;
+
 const scanState = {
   neck: null,
   head: null,
@@ -377,6 +381,7 @@ loader.load(
       applyMaterialCompatibilityFallback(currentRoot);
 
       scene.add(currentRoot);
+      window.__vrmRoot = currentRoot;
 
       // Some VRM exports already face forward; forcing PI can hide the face (backface culling).
       currentRoot.rotation.y = 0;
