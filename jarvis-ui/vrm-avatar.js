@@ -35,10 +35,77 @@ scene.add(new THREE.AmbientLight(0x6ec8ff, 0.34));
 let currentVrm = null;
 let last = performance.now();
 
+const scanState = {
+  neck: null,
+  head: null,
+  leftEye: null,
+  rightEye: null,
+  base: new Map(),
+  enabled: false
+};
+
+const tmpEuler = new THREE.Euler(0, 0, 0, "XYZ");
+const tmpQuat = new THREE.Quaternion();
+
 function setAvatarTag(text) {
   if (avatarTag) {
     avatarTag.textContent = text;
   }
+}
+
+function getHumanoidBone(humanoid, name) {
+  if (!humanoid) {
+    return null;
+  }
+
+  return humanoid.getNormalizedBoneNode(name) || humanoid.getRawBoneNode(name) || null;
+}
+
+function configureScanBones(vrm) {
+  scanState.neck = getHumanoidBone(vrm.humanoid, "neck");
+  scanState.head = getHumanoidBone(vrm.humanoid, "head");
+  scanState.leftEye = getHumanoidBone(vrm.humanoid, "leftEye");
+  scanState.rightEye = getHumanoidBone(vrm.humanoid, "rightEye");
+
+  scanState.base.clear();
+  [scanState.neck, scanState.head, scanState.leftEye, scanState.rightEye]
+    .filter(Boolean)
+    .forEach((node) => {
+      scanState.base.set(node, node.quaternion.clone());
+    });
+
+  scanState.enabled = scanState.base.size > 0;
+}
+
+function applyBoneLook(node, yaw, pitch) {
+  if (!node) {
+    return;
+  }
+
+  const base = scanState.base.get(node);
+  if (!base) {
+    return;
+  }
+
+  tmpEuler.set(pitch, yaw, 0);
+  tmpQuat.setFromEuler(tmpEuler);
+  node.quaternion.copy(base).multiply(tmpQuat);
+}
+
+function applySearchingLook(now) {
+  if (!scanState.enabled) {
+    return;
+  }
+
+  const t = now * 0.001;
+  const yaw = Math.sin(t * 0.65) * 0.22;
+  const pitch = Math.sin(t * 0.31 + 1.2) * 0.055;
+
+  // Subtle layered motion: neck follows, head leads, eyes track a bit further.
+  applyBoneLook(scanState.neck, yaw * 0.3, pitch * 0.35);
+  applyBoneLook(scanState.head, yaw * 0.55, pitch * 0.6);
+  applyBoneLook(scanState.leftEye, yaw * 0.9, pitch * 0.8);
+  applyBoneLook(scanState.rightEye, yaw * 0.9, pitch * 0.8);
 }
 
 function onResize() {
@@ -77,8 +144,10 @@ loader.load(
     vrm.scene.rotation.y = Math.PI;
     vrm.scene.position.set(0, -1.02, 0);
 
+    configureScanBones(vrm);
+
     avatarCore.classList.add("vrm-ready");
-    setAvatarTag("AI AVATAR: FEM_VROID ONLINE");
+    setAvatarTag(scanState.enabled ? "AI AVATAR: FEM_VROID ONLINE - SCANNING" : "AI AVATAR: FEM_VROID ONLINE");
 
     onResize();
   },
@@ -95,6 +164,7 @@ function animate(now) {
   if (currentVrm) {
     currentVrm.update(delta);
     currentVrm.scene.rotation.y = Math.PI + Math.sin(now * 0.00035) * 0.12;
+    applySearchingLook(now);
   }
 
   renderer.render(scene, camera);
