@@ -11,6 +11,7 @@ services:
       WEBUI_AUTH: "False"
       OPENAI_API_BASE_URL: ${SAMATHA_OPENAI_API_BASE_URL:-https://api.openai.com/v1}
       OPENAI_API_KEY: ${SAMATHA_OPENAI_API_KEY:-}
+      SAMATHA_MCP_SERVER_URL: ${SAMATHA_MCP_SERVER_URL:-http://automation-mcp-server:8080/mcp}
 
   jarvis-ui:
     image: nginx:alpine

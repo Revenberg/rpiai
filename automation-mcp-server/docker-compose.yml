@@ -17,3 +17,10 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+    networks:
+      - rpiai
+
+networks:
+  rpiai:
+    external: true
+    name: rpiai_default
