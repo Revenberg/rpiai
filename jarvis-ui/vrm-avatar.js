@@ -42,6 +42,7 @@ let last = performance.now();
 const expressionState = {
   enabled: false
 };
+let renderProbeReady = false;
 
 const scanState = {
   neck: null,
@@ -165,6 +166,31 @@ function applyFacialExpressions(vrm, now) {
   const okOu = setExpressionValue(vrm, "ou", mouth * 0.45);
 
   expressionState.enabled = okBlink || okJoy || okAa || okIh || okOu;
+}
+
+function probeCanvasVisibility() {
+  if (renderProbeReady) {
+    return;
+  }
+
+  const gl = canvas.getContext("webgl2", { preserveDrawingBuffer: true }) || canvas.getContext("webgl", { preserveDrawingBuffer: true });
+  if (!gl || !gl.drawingBufferWidth || !gl.drawingBufferHeight) {
+    return;
+  }
+
+  const px = new Uint8Array(4);
+  const x = Math.floor(gl.drawingBufferWidth / 2);
+  const y = Math.floor(gl.drawingBufferHeight / 2);
+  gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+
+  const hasPaintedPixel = px[3] > 0 || px[0] > 0 || px[1] > 0 || px[2] > 0;
+  if (hasPaintedPixel) {
+    avatarCore.classList.add("vrm-painted");
+    avatarCore.classList.remove("vrm-needs-fallback");
+    renderProbeReady = true;
+  } else {
+    avatarCore.classList.add("vrm-needs-fallback");
+  }
 }
 
 function countRenderableMeshes(root) {
@@ -401,6 +427,7 @@ function animate(now) {
   }
 
   renderer.render(scene, camera);
+  probeCanvasVisibility();
   requestAnimationFrame(animate);
 }
 

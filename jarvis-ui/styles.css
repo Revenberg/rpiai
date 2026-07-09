@@ -335,10 +335,25 @@ h3 {
   filter: brightness(1.2) contrast(1.18) saturate(1.12);
 }
 
+.avatar-core.vrm-needs-fallback .avatar-synth {
+  opacity: 0.92;
+}
+
+.avatar-core.vrm-needs-fallback .avatar-overlay {
+  opacity: 0.34;
+}
+
 .avatar-core.vrm-ready .avatar-synth,
 .avatar-core.vrm-ready .avatar-overlay,
 .avatar-core.vrm-ready::before,
 .avatar-core.vrm-ready::after {
+  opacity: 0;
+}
+
+.avatar-core.vrm-painted .avatar-synth,
+.avatar-core.vrm-painted .avatar-overlay,
+.avatar-core.vrm-painted::before,
+.avatar-core.vrm-painted::after {
   opacity: 0;
 }
 
