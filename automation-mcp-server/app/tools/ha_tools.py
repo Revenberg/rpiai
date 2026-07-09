@@ -8,7 +8,7 @@ from app.utils.instrumentation import instrument_tool_call
 
 def register_ha_tools(mcp: Any, provider: HomeAssistantProvider, logger: Any) -> None:
     @mcp.tool(name="ha.entities", description="List Home Assistant entities for the selected instance.")
-    async def ha_entities(instance: str) -> dict[str, Any]:
+    async def ha_entities(instance: str):
         return await instrument_tool_call(
             logger=logger,
             tool_name="ha.entities",
@@ -17,7 +17,7 @@ def register_ha_tools(mcp: Any, provider: HomeAssistantProvider, logger: Any) ->
         )
 
     @mcp.tool(name="ha.states", description="List Home Assistant states for the selected instance.")
-    async def ha_states(instance: str) -> dict[str, Any]:
+    async def ha_states(instance: str):
         return await instrument_tool_call(
             logger=logger,
             tool_name="ha.states",
@@ -29,7 +29,7 @@ def register_ha_tools(mcp: Any, provider: HomeAssistantProvider, logger: Any) ->
     async def ha_turn_on(
         instance: str,
         entity: str,
-    ) -> dict[str, Any]:
+    ):
         return await instrument_tool_call(
             logger=logger,
             tool_name="ha.turn_on",
@@ -41,7 +41,7 @@ def register_ha_tools(mcp: Any, provider: HomeAssistantProvider, logger: Any) ->
     async def ha_turn_off(
         instance: str,
         entity: str,
-    ) -> dict[str, Any]:
+    ):
         return await instrument_tool_call(
             logger=logger,
             tool_name="ha.turn_off",
@@ -53,7 +53,7 @@ def register_ha_tools(mcp: Any, provider: HomeAssistantProvider, logger: Any) ->
     async def ha_toggle(
         instance: str,
         entity: str,
-    ) -> dict[str, Any]:
+    ):
         return await instrument_tool_call(
             logger=logger,
             tool_name="ha.toggle",
@@ -66,8 +66,8 @@ def register_ha_tools(mcp: Any, provider: HomeAssistantProvider, logger: Any) ->
         instance: str,
         domain: str,
         service: str,
-        data: dict[str, Any],
-    ) -> dict[str, Any]:
+        data: dict,
+    ):
         return await instrument_tool_call(
             logger=logger,
             tool_name="ha.call_service",
@@ -79,7 +79,7 @@ def register_ha_tools(mcp: Any, provider: HomeAssistantProvider, logger: Any) ->
     async def ha_scene(
         instance: str,
         scene: str,
-    ) -> dict[str, Any]:
+    ):
         return await instrument_tool_call(
             logger=logger,
             tool_name="ha.scene",
@@ -91,7 +91,7 @@ def register_ha_tools(mcp: Any, provider: HomeAssistantProvider, logger: Any) ->
     async def ha_script(
         instance: str,
         script: str,
-    ) -> dict[str, Any]:
+    ):
         return await instrument_tool_call(
             logger=logger,
             tool_name="ha.script",
@@ -103,7 +103,7 @@ def register_ha_tools(mcp: Any, provider: HomeAssistantProvider, logger: Any) ->
     async def ha_get_state(
         instance: str,
         entity: str,
-    ) -> dict[str, Any]:
+    ):
         return await instrument_tool_call(
             logger=logger,
             tool_name="ha.get_state",
@@ -116,7 +116,7 @@ def register_ha_tools(mcp: Any, provider: HomeAssistantProvider, logger: Any) ->
         instance: str,
         entity: str,
         hours: int = 24,
-    ) -> dict[str, Any]:
+    ):
         return await instrument_tool_call(
             logger=logger,
             tool_name="ha.history",
@@ -125,7 +125,7 @@ def register_ha_tools(mcp: Any, provider: HomeAssistantProvider, logger: Any) ->
         )
 
     @mcp.tool(name="ha.areas", description="List Home Assistant areas for the selected instance.")
-    async def ha_areas(instance: str) -> dict[str, Any]:
+    async def ha_areas(instance: str):
         return await instrument_tool_call(
             logger=logger,
             tool_name="ha.areas",
@@ -134,7 +134,7 @@ def register_ha_tools(mcp: Any, provider: HomeAssistantProvider, logger: Any) ->
         )
 
     @mcp.tool(name="ha.devices", description="List Home Assistant devices for the selected instance.")
-    async def ha_devices(instance: str) -> dict[str, Any]:
+    async def ha_devices(instance: str):
         return await instrument_tool_call(
             logger=logger,
             tool_name="ha.devices",
@@ -143,7 +143,7 @@ def register_ha_tools(mcp: Any, provider: HomeAssistantProvider, logger: Any) ->
         )
 
     @mcp.tool(name="ha.labels", description="List Home Assistant labels for the selected instance.")
-    async def ha_labels(instance: str) -> dict[str, Any]:
+    async def ha_labels(instance: str):
         return await instrument_tool_call(
             logger=logger,
             tool_name="ha.labels",
@@ -152,7 +152,7 @@ def register_ha_tools(mcp: Any, provider: HomeAssistantProvider, logger: Any) ->
         )
 
     @mcp.tool(name="ha.services", description="List Home Assistant services for the selected instance.")
-    async def ha_services(instance: str) -> dict[str, Any]:
+    async def ha_services(instance: str):
         return await instrument_tool_call(
             logger=logger,
             tool_name="ha.services",

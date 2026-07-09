@@ -9,7 +9,7 @@ from app.utils.responses import fail
 
 def register_homey_tools(mcp: Any, provider: HomeyProvider | None, logger: Any) -> None:
     @mcp.tool(name="homey.devices", description="List all Homey devices.")
-    async def homey_devices() -> dict[str, Any]:
+    async def homey_devices():
         if not provider:
             return fail("Homey disabled")
         return await instrument_tool_call(
@@ -22,7 +22,7 @@ def register_homey_tools(mcp: Any, provider: HomeyProvider | None, logger: Any) 
     @mcp.tool(name="homey.device", description="Get a Homey device by device ID.")
     async def homey_device(
         device_id: str,
-    ) -> dict[str, Any]:
+    ):
         if not provider:
             return fail("Homey disabled")
         return await instrument_tool_call(
@@ -33,7 +33,7 @@ def register_homey_tools(mcp: Any, provider: HomeyProvider | None, logger: Any) 
         )
 
     @mcp.tool(name="homey.turn_on", description="Turn a Homey device on.")
-    async def homey_turn_on(device: str) -> dict[str, Any]:
+    async def homey_turn_on(device: str):
         if not provider:
             return fail("Homey disabled")
         return await instrument_tool_call(
@@ -44,7 +44,7 @@ def register_homey_tools(mcp: Any, provider: HomeyProvider | None, logger: Any) 
         )
 
     @mcp.tool(name="homey.turn_off", description="Turn a Homey device off.")
-    async def homey_turn_off(device: str) -> dict[str, Any]:
+    async def homey_turn_off(device: str):
         if not provider:
             return fail("Homey disabled")
         return await instrument_tool_call(
@@ -55,7 +55,7 @@ def register_homey_tools(mcp: Any, provider: HomeyProvider | None, logger: Any) 
         )
 
     @mcp.tool(name="homey.toggle", description="Toggle a Homey device.")
-    async def homey_toggle(device: str) -> dict[str, Any]:
+    async def homey_toggle(device: str):
         if not provider:
             return fail("Homey disabled")
         return await instrument_tool_call(
@@ -69,7 +69,7 @@ def register_homey_tools(mcp: Any, provider: HomeyProvider | None, logger: Any) 
     async def homey_set_dim(
         device: str,
         value: float,
-    ) -> dict[str, Any]:
+    ):
         if not provider:
             return fail("Homey disabled")
         return await instrument_tool_call(
@@ -83,7 +83,7 @@ def register_homey_tools(mcp: Any, provider: HomeyProvider | None, logger: Any) 
     async def homey_set_temperature(
         device: str,
         value: float,
-    ) -> dict[str, Any]:
+    ):
         if not provider:
             return fail("Homey disabled")
         return await instrument_tool_call(
@@ -97,8 +97,8 @@ def register_homey_tools(mcp: Any, provider: HomeyProvider | None, logger: Any) 
     async def homey_set_capability(
         device: str,
         capability: str,
-        value: Any,
-    ) -> dict[str, Any]:
+        value: object,
+    ):
         if not provider:
             return fail("Homey disabled")
         return await instrument_tool_call(
@@ -109,7 +109,7 @@ def register_homey_tools(mcp: Any, provider: HomeyProvider | None, logger: Any) 
         )
 
     @mcp.tool(name="homey.run_flow", description="Run a Homey flow by flow name.")
-    async def homey_run_flow(flow_name: str) -> dict[str, Any]:
+    async def homey_run_flow(flow_name: str):
         if not provider:
             return fail("Homey disabled")
         return await instrument_tool_call(
@@ -120,7 +120,7 @@ def register_homey_tools(mcp: Any, provider: HomeyProvider | None, logger: Any) 
         )
 
     @mcp.tool(name="homey.flow_cards", description="List Homey flow cards.")
-    async def homey_flow_cards() -> dict[str, Any]:
+    async def homey_flow_cards():
         if not provider:
             return fail("Homey disabled")
         return await instrument_tool_call(
@@ -131,7 +131,7 @@ def register_homey_tools(mcp: Any, provider: HomeyProvider | None, logger: Any) 
         )
 
     @mcp.tool(name="homey.zones", description="List Homey zones.")
-    async def homey_zones() -> dict[str, Any]:
+    async def homey_zones():
         if not provider:
             return fail("Homey disabled")
         return await instrument_tool_call(
@@ -142,7 +142,7 @@ def register_homey_tools(mcp: Any, provider: HomeyProvider | None, logger: Any) 
         )
 
     @mcp.tool(name="homey.energy", description="Get Homey energy information.")
-    async def homey_energy() -> dict[str, Any]:
+    async def homey_energy():
         if not provider:
             return fail("Homey disabled")
         return await instrument_tool_call(
@@ -153,7 +153,7 @@ def register_homey_tools(mcp: Any, provider: HomeyProvider | None, logger: Any) 
         )
 
     @mcp.tool(name="homey.get_variable", description="Get a Homey logic variable by name.")
-    async def homey_get_variable(name: str) -> dict[str, Any]:
+    async def homey_get_variable(name: str):
         if not provider:
             return fail("Homey disabled")
         return await instrument_tool_call(
@@ -166,8 +166,8 @@ def register_homey_tools(mcp: Any, provider: HomeyProvider | None, logger: Any) 
     @mcp.tool(name="homey.set_variable", description="Set a Homey logic variable by name.")
     async def homey_set_variable(
         name: str,
-        value: Any,
-    ) -> dict[str, Any]:
+        value: object,
+    ):
         if not provider:
             return fail("Homey disabled")
         return await instrument_tool_call(
