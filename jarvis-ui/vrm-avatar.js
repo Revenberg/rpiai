@@ -94,14 +94,14 @@ function frameVrm(root) {
 
   // Normalize model origin so camera framing is reliable across different VRM exports.
   root.position.sub(tmpCenter);
-  const headY = Math.max(tmpSize.y * 0.84, 0.74);
+  const targetY = THREE.MathUtils.clamp(tmpSize.y * 0.08, 0.02, 0.18);
   const fovRad = (camera.fov * Math.PI) / 180;
   const distance = (tmpSize.y * 0.5) / Math.tan(fovRad * 0.5);
 
   camera.near = 0.01;
   camera.far = 100;
-  camera.position.set(0, headY, Math.max(distance * 0.78, 0.78));
-  camera.lookAt(0, headY + 0.02, 0);
+  camera.position.set(0, targetY, Math.max(distance * 0.78, 0.78));
+  camera.lookAt(0, targetY, 0);
   camera.updateProjectionMatrix();
   return true;
 }
