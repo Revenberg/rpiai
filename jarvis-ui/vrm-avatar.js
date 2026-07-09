@@ -39,6 +39,9 @@ scene.add(new THREE.HemisphereLight(0x9ce8ff, 0x081525, 0.75));
 let currentVrm = null;
 let currentRoot = null;
 let last = performance.now();
+const expressionState = {
+  enabled: false
+};
 
 const scanState = {
   neck: null,
@@ -73,7 +76,7 @@ function frameVrm(root) {
   tmpBox.getCenter(tmpCenter);
 
   const modelHeight = Math.max(tmpSize.y, 1e-4);
-  const targetHeight = 1.55;
+  const targetHeight = 1.2;
   const normalizeScale = THREE.MathUtils.clamp(targetHeight / modelHeight, 0.05, 30);
   root.scale.multiplyScalar(normalizeScale);
 
@@ -86,16 +89,82 @@ function frameVrm(root) {
 
   // Normalize model origin so camera framing is reliable across different VRM exports.
   root.position.sub(tmpCenter);
-  const headY = Math.max(tmpSize.y * 0.72, 0.7);
+  const headY = Math.max(tmpSize.y * 0.84, 0.74);
   const fovRad = (camera.fov * Math.PI) / 180;
   const distance = (tmpSize.y * 0.5) / Math.tan(fovRad * 0.5);
 
   camera.near = 0.01;
   camera.far = 100;
-  camera.position.set(0, headY, Math.max(distance * 1.18, 1.15));
-  camera.lookAt(0, headY, 0);
+  camera.position.set(0, headY, Math.max(distance * 0.78, 0.78));
+  camera.lookAt(0, headY + 0.02, 0);
   camera.updateProjectionMatrix();
   return true;
+}
+
+function expressionNameCandidates(name) {
+  const firstUpper = name.charAt(0).toUpperCase() + name.slice(1);
+  const upper = name.toUpperCase();
+  const map = {
+    aa: ["a", "A", "Aa", "AA"],
+    ih: ["i", "I", "Ih", "IH"],
+    ou: ["o", "O", "Ou", "OU"],
+    joy: ["happy", "Happy", "JOY", "Joy"],
+    blink: ["Blink_L", "Blink_R", "BLINK"]
+  };
+
+  return [name, name.toLowerCase(), firstUpper, upper, ...(map[name] || [])];
+}
+
+function setExpressionValue(vrm, name, value) {
+  const v = THREE.MathUtils.clamp(value, 0, 1);
+  let applied = false;
+
+  const manager = vrm?.expressionManager;
+  if (manager && typeof manager.setValue === "function") {
+    expressionNameCandidates(name).forEach((candidate) => {
+      try {
+        manager.setValue(candidate, v);
+        applied = true;
+      } catch {
+        // Ignore unsupported expression names.
+      }
+    });
+  }
+
+  const proxy = vrm?.blendShapeProxy;
+  if (proxy && typeof proxy.setValue === "function") {
+    expressionNameCandidates(name).forEach((candidate) => {
+      try {
+        proxy.setValue(candidate, v);
+        applied = true;
+      } catch {
+        // Ignore unsupported blendshape names.
+      }
+    });
+  }
+
+  return applied;
+}
+
+function applyFacialExpressions(vrm, now) {
+  if (!vrm) {
+    return;
+  }
+
+  const t = now * 0.001;
+  const blinkPulse = Math.max(0, Math.sin(t * 4.2) * 2.2 - 1.15);
+  const blink = THREE.MathUtils.clamp(blinkPulse, 0, 1);
+  const smile = 0.14 + Math.max(0, Math.sin(t * 0.42 + 0.4)) * 0.22;
+  const mouth = Math.max(0, Math.sin(t * 2.25 + 1.1)) * 0.34;
+  const mouthWide = Math.max(0, Math.sin(t * 1.6 + 2.2)) * 0.2;
+
+  const okBlink = setExpressionValue(vrm, "blink", blink);
+  const okJoy = setExpressionValue(vrm, "joy", smile);
+  const okAa = setExpressionValue(vrm, "aa", mouth);
+  const okIh = setExpressionValue(vrm, "ih", mouthWide);
+  const okOu = setExpressionValue(vrm, "ou", mouth * 0.45);
+
+  expressionState.enabled = okBlink || okJoy || okAa || okIh || okOu;
 }
 
 function countRenderableMeshes(root) {
@@ -290,9 +359,16 @@ loader.load(
       }
 
       configureScanBones(vrm);
+      applyFacialExpressions(vrm, performance.now());
 
       avatarCore.classList.add("vrm-ready");
-      setAvatarTag(scanState.enabled ? "AI AVATAR: FEM_VROID ONLINE - SCANNING" : "AI AVATAR: FEM_VROID ONLINE");
+      if (scanState.enabled && expressionState.enabled) {
+        setAvatarTag("AI AVATAR: FEM_VROID ONLINE - EXPRESSIVE");
+      } else if (scanState.enabled) {
+        setAvatarTag("AI AVATAR: FEM_VROID ONLINE - SCANNING");
+      } else {
+        setAvatarTag("AI AVATAR: FEM_VROID ONLINE");
+      }
 
       onResize();
     } catch {
@@ -315,6 +391,7 @@ function animate(now) {
       currentRoot.rotation.y = Math.sin(now * 0.00035) * 0.12;
     }
     applySearchingLook(now);
+    applyFacialExpressions(currentVrm, now);
   }
 
   renderer.render(scene, camera);
