@@ -37,6 +37,7 @@ scene.add(new THREE.AmbientLight(0x6ec8ff, 0.34));
 scene.add(new THREE.HemisphereLight(0x9ce8ff, 0x081525, 0.75));
 
 let currentVrm = null;
+let currentRoot = null;
 let last = performance.now();
 
 const scanState = {
@@ -54,12 +55,12 @@ const tmpBox = new THREE.Box3();
 const tmpSize = new THREE.Vector3();
 const tmpCenter = new THREE.Vector3();
 
-function frameVrm(vrm) {
-  if (!vrm || !vrm.scene) {
+function frameVrm(root) {
+  if (!root) {
     return;
   }
 
-  tmpBox.setFromObject(vrm.scene);
+  tmpBox.setFromObject(root);
   if (tmpBox.isEmpty()) {
     return;
   }
@@ -68,7 +69,7 @@ function frameVrm(vrm) {
   tmpBox.getCenter(tmpCenter);
 
   // Normalize model origin so camera framing is reliable across different VRM exports.
-  vrm.scene.position.sub(tmpCenter);
+  root.position.sub(tmpCenter);
   const headY = Math.max(tmpSize.y * 0.72, 0.7);
 
   camera.near = 0.01;
@@ -179,10 +180,12 @@ loader.load(
       }
 
       currentVrm = vrm;
-      scene.add(vrm.scene);
+      currentRoot = vrm.scene && vrm.scene.children.length > 0 ? vrm.scene : gltf.scene;
+      scene.add(currentRoot);
 
-      vrm.scene.rotation.y = Math.PI;
-      frameVrm(vrm);
+      // Some VRM exports already face forward; forcing PI can hide the face (backface culling).
+      currentRoot.rotation.y = 0;
+      frameVrm(currentRoot);
 
       configureScanBones(vrm);
 
@@ -206,7 +209,9 @@ function animate(now) {
 
   if (currentVrm) {
     currentVrm.update(delta);
-    currentVrm.scene.rotation.y = Math.PI + Math.sin(now * 0.00035) * 0.12;
+    if (currentRoot) {
+      currentRoot.rotation.y = Math.sin(now * 0.00035) * 0.12;
+    }
     applySearchingLook(now);
   }
 
