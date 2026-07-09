@@ -72,13 +72,27 @@ function frameVrm(root) {
   tmpBox.getSize(tmpSize);
   tmpBox.getCenter(tmpCenter);
 
+  const modelHeight = Math.max(tmpSize.y, 1e-4);
+  const targetHeight = 1.55;
+  const normalizeScale = THREE.MathUtils.clamp(targetHeight / modelHeight, 0.05, 30);
+  root.scale.multiplyScalar(normalizeScale);
+
+  tmpBox.setFromObject(root);
+  if (tmpBox.isEmpty()) {
+    return false;
+  }
+  tmpBox.getSize(tmpSize);
+  tmpBox.getCenter(tmpCenter);
+
   // Normalize model origin so camera framing is reliable across different VRM exports.
   root.position.sub(tmpCenter);
   const headY = Math.max(tmpSize.y * 0.72, 0.7);
+  const fovRad = (camera.fov * Math.PI) / 180;
+  const distance = (tmpSize.y * 0.5) / Math.tan(fovRad * 0.5);
 
   camera.near = 0.01;
   camera.far = 100;
-  camera.position.set(0, headY, Math.max(tmpSize.z * 1.8, 1.05));
+  camera.position.set(0, headY, Math.max(distance * 1.18, 1.15));
   camera.lookAt(0, headY, 0);
   camera.updateProjectionMatrix();
   return true;
