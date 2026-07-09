@@ -324,8 +324,15 @@ h3 {
 }
 
 .avatar-core.vrm-loading .avatar-photo {
-  opacity: 0.05;
+  opacity: 0;
   filter: saturate(0.5) contrast(1.1) brightness(0.42) hue-rotate(-22deg) blur(0.5px);
+}
+
+.avatar-core.vrm-loading .avatar-synth,
+.avatar-core.vrm-loading .avatar-overlay,
+.avatar-core.vrm-loading::before,
+.avatar-core.vrm-loading::after {
+  opacity: 0;
 }
 
 .avatar-core.vrm-ready .vrm-canvas {
