@@ -8,6 +8,7 @@ DISPLAY="${DISPLAY:-:0}"
 XAUTHORITY="${XAUTHORITY:-${HOME:-/home/pi}/.Xauthority}"
 CAMERA_DEVICE="${CAMERA_DEVICE:-/dev/video0}"
 CAMERA_STREAM_URL="${CAMERA_STREAM_URL:-http://localhost:8081/stream.mjpg}"
+CAMERA_LOOP_LOG="${CAMERA_LOOP_LOG:-${HOME:-/home/pi}/camera-loop-8081.log}"
 
 mkdir -p "$(dirname "$LOG_FILE")"
 
@@ -39,26 +40,19 @@ start_camera_stream() {
   fi
 
   if command -v curl >/dev/null 2>&1; then
-    if timeout 2 curl -fsS "$CAMERA_STREAM_URL" >/dev/null 2>&1; then
+    if timeout 2 curl -fsS "$CAMERA_STREAM_URL" -o /dev/null >/dev/null 2>&1; then
       return
     fi
   fi
 
   pkill -f 'ffmpeg.*stream.mjpg' >/dev/null 2>&1 || true
+  pkill -f 'camera-loop-8081' >/dev/null 2>&1 || true
 
-  nohup ffmpeg \
-    -hide_banner \
-    -loglevel error \
-    -f v4l2 \
-    -i "$CAMERA_DEVICE" \
-    -vf fps=10 \
-    -f mjpeg \
-    -q:v 7 \
-    -listen 1 \
-    "$CAMERA_STREAM_URL" >>"$LOG_FILE" 2>&1 &
+  nohup bash -lc "while true; do ffmpeg -nostdin -hide_banner -loglevel error -f v4l2 -framerate 15 -video_size 640x480 -i '$CAMERA_DEVICE' -q:v 7 -f mpjpeg -listen 1 '$CAMERA_STREAM_URL'; sleep 1; done" \
+    >>"$CAMERA_LOOP_LOG" 2>&1 < /dev/null &
 
   sleep 1
-  log "Camera stream helper started on $CAMERA_STREAM_URL"
+  log "Camera stream helper loop started on $CAMERA_STREAM_URL"
 }
 
 # Wait until the graphical server for this user is ready.
