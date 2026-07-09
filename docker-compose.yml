@@ -20,8 +20,7 @@ services:
       - ./jarvis-ui:/usr/share/nginx/html:ro
 
   camera-stream:
-    build:
-      context: ./camera-stream
+    image: lscr.io/linuxserver/ffmpeg:latest
     container_name: camera-stream
     restart: unless-stopped
     devices:
@@ -33,6 +32,23 @@ services:
       STREAM_PORT: 8081
       STREAM_FPS: 10
       STREAM_QUALITY: 7
+    command:
+      - -hide_banner
+      - -loglevel
+      - error
+      - -f
+      - v4l2
+      - -i
+      - /dev/video0
+      - -vf
+      - fps=10
+      - -f
+      - mjpeg
+      - -q:v
+      - "7"
+      - -listen
+      - "1"
+      - http://0.0.0.0:8081/stream.mjpg
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8081/stream.mjpg >/dev/null 2>&1 || exit 1"]
       interval: 20s
