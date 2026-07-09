@@ -320,12 +320,12 @@ h3 {
   height: 100%;
   display: block;
   opacity: 0;
-  transition: opacity 0.35s ease;
+  transition: opacity 0.45s ease;
 }
 
 .avatar-core.vrm-loading .avatar-photo {
-  opacity: 0;
-  filter: saturate(0.5) contrast(1.1) brightness(0.42) hue-rotate(-22deg) blur(0.5px);
+  opacity: 0.92;
+  filter: saturate(1.02) contrast(1.28) brightness(0.96) blur(0);
 }
 
 .avatar-core.vrm-loading .avatar-synth,
@@ -337,6 +337,7 @@ h3 {
 
 .avatar-core.vrm-ready .vrm-canvas {
   opacity: 1;
+  filter: brightness(1.2) contrast(1.18) saturate(1.12);
 }
 
 .avatar-core.vrm-ready .avatar-photo,
@@ -371,7 +372,7 @@ h3 {
   object-position: 50% 24%;
   transform: scale(1.16);
   opacity: 0.12;
-  filter: saturate(0.58) contrast(1.14) brightness(0.5) hue-rotate(-22deg) blur(0.45px);
+  filter: saturate(0.72) contrast(1.12) brightness(0.62) hue-rotate(-12deg) blur(0.25px);
 }
 
 .avatar-synth {
