@@ -1,0 +1,17 @@
+[Unit]
+Description=RPIAI Camera Stream (MJPEG on 8081)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=kiosk
+Group=kiosk
+Environment=CAMERA_DEVICE=/dev/video0
+Environment=CAMERA_STREAM_URL=http://0.0.0.0:8081/stream.mjpg
+ExecStart=/bin/bash -lc 'while true; do ffmpeg -nostdin -hide_banner -loglevel error -f v4l2 -framerate 15 -video_size 640x480 -i "$CAMERA_DEVICE" -q:v 7 -f mpjpeg -listen 1 "$CAMERA_STREAM_URL"; sleep 1; done'
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target

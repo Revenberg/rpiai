@@ -9,6 +9,7 @@ XAUTHORITY="${XAUTHORITY:-${HOME:-/home/pi}/.Xauthority}"
 CAMERA_DEVICE="${CAMERA_DEVICE:-/dev/video0}"
 CAMERA_STREAM_URL="${CAMERA_STREAM_URL:-http://localhost:8081/stream.mjpg}"
 CAMERA_LOOP_LOG="${CAMERA_LOOP_LOG:-${HOME:-/home/pi}/camera-loop-8081.log}"
+CAMERA_EXTERNAL_MANAGED_FLAG="${CAMERA_EXTERNAL_MANAGED_FLAG:-${HOME:-/home/pi}/.camera-stream-managed}"
 
 mkdir -p "$(dirname "$LOG_FILE")"
 
@@ -29,6 +30,11 @@ export DISPLAY
 export XAUTHORITY
 
 start_camera_stream() {
+  if [[ -f "$CAMERA_EXTERNAL_MANAGED_FLAG" ]]; then
+    log "Camera stream is externally managed; helper skipped"
+    return
+  fi
+
   if ! command -v ffmpeg >/dev/null 2>&1; then
     log "ffmpeg not installed; camera stream helper skipped"
     return
