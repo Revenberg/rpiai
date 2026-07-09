@@ -123,6 +123,43 @@ function forceMeshVisibility(root) {
   });
 }
 
+function applyMaterialCompatibilityFallback(root) {
+  root.traverse((node) => {
+    if (!node || !node.isMesh) {
+      return;
+    }
+
+    const convert = (mat) => {
+      if (!mat) {
+        return mat;
+      }
+      const looksLikeCustomShader = mat.isShaderMaterial || /mtoon|shader/i.test(mat.type || "");
+      if (!looksLikeCustomShader) {
+        return mat;
+      }
+
+      const fallback = new THREE.MeshStandardMaterial({
+        color: 0xf4f8ff,
+        map: mat.map || null,
+        emissive: new THREE.Color(0x1a2433),
+        emissiveIntensity: 0.2,
+        roughness: 0.72,
+        metalness: 0.04,
+        side: THREE.DoubleSide,
+        transparent: false,
+        opacity: 1
+      });
+
+      fallback.skinning = !!node.isSkinnedMesh;
+      fallback.morphTargets = !!node.morphTargetInfluences;
+      fallback.morphNormals = !!node.morphTargetInfluences;
+      return fallback;
+    };
+
+    node.material = Array.isArray(node.material) ? node.material.map(convert) : convert(node.material);
+  });
+}
+
 function setAvatarTag(text) {
   if (avatarTag) {
     avatarTag.textContent = text;
@@ -226,6 +263,7 @@ loader.load(
       }
 
       forceMeshVisibility(currentRoot);
+      applyMaterialCompatibilityFallback(currentRoot);
 
       scene.add(currentRoot);
 
