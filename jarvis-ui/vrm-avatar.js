@@ -333,7 +333,7 @@ onResize();
 
 const loader = new GLTFLoader();
 loader.register((parser) => new VRMLoaderPlugin(parser));
-const vrmModelUrl = "/assets/vrm/victoria-jeans.vrm?v=20260709d";
+const vrmModelUrl = "/assets/vrm/fem_vroid.vrm?v=20260709e";
 
 avatarCore.classList.add("vrm-loading");
 setAvatarTag("AI AVATAR: LOADING VRM");
