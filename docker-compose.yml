@@ -23,6 +23,9 @@ services:
     image: lscr.io/linuxserver/ffmpeg:latest
     container_name: camera-stream
     restart: unless-stopped
+    user: "0:0"
+    group_add:
+      - "44"
     devices:
       - /dev/video0:/dev/video0
     ports:
