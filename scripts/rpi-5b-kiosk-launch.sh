@@ -6,6 +6,8 @@ CHECK_URL="${CHECK_URL:-$URL}"
 LOG_FILE="${HOME:-/home/pi}/kiosk-launch.log"
 DISPLAY="${DISPLAY:-:0}"
 XAUTHORITY="${XAUTHORITY:-${HOME:-/home/pi}/.Xauthority}"
+CAMERA_DEVICE="${CAMERA_DEVICE:-/dev/video0}"
+CAMERA_STREAM_URL="${CAMERA_STREAM_URL:-http://localhost:8081/stream.mjpg}"
 
 mkdir -p "$(dirname "$LOG_FILE")"
 
@@ -24,6 +26,40 @@ fi
 
 export DISPLAY
 export XAUTHORITY
+
+start_camera_stream() {
+  if ! command -v ffmpeg >/dev/null 2>&1; then
+    log "ffmpeg not installed; camera stream helper skipped"
+    return
+  fi
+
+  if [[ ! -r "$CAMERA_DEVICE" ]]; then
+    log "Camera device not readable: $CAMERA_DEVICE"
+    return
+  fi
+
+  if command -v curl >/dev/null 2>&1; then
+    if timeout 2 curl -fsS "$CAMERA_STREAM_URL" >/dev/null 2>&1; then
+      return
+    fi
+  fi
+
+  pkill -f 'ffmpeg.*stream.mjpg' >/dev/null 2>&1 || true
+
+  nohup ffmpeg \
+    -hide_banner \
+    -loglevel error \
+    -f v4l2 \
+    -i "$CAMERA_DEVICE" \
+    -vf fps=10 \
+    -f mjpeg \
+    -q:v 7 \
+    -listen 1 \
+    "$CAMERA_STREAM_URL" >>"$LOG_FILE" 2>&1 &
+
+  sleep 1
+  log "Camera stream helper started on $CAMERA_STREAM_URL"
+}
 
 # Wait until the graphical server for this user is ready.
 for _ in $(seq 1 60); do
@@ -64,6 +100,8 @@ while true; do
     sleep 2
     continue
   fi
+
+  start_camera_stream
 
   pkill -f 'chromium.*--kiosk' >/dev/null 2>&1 || true
 

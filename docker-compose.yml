@@ -19,45 +19,5 @@ services:
     volumes:
       - ./jarvis-ui:/usr/share/nginx/html:ro
 
-  camera-stream:
-    image: lscr.io/linuxserver/ffmpeg:latest
-    container_name: camera-stream
-    restart: unless-stopped
-    user: "0:0"
-    group_add:
-      - "44"
-    devices:
-      - /dev/video0:/dev/video0
-    ports:
-      - "8081:8081"
-    environment:
-      CAMERA_DEVICE: /dev/video0
-      STREAM_PORT: 8081
-      STREAM_FPS: 10
-      STREAM_QUALITY: 7
-    command:
-      - -hide_banner
-      - -loglevel
-      - error
-      - -f
-      - v4l2
-      - -i
-      - /dev/video0
-      - -vf
-      - fps=10
-      - -f
-      - mjpeg
-      - -q:v
-      - "7"
-      - -listen
-      - "1"
-      - http://0.0.0.0:8081/stream.mjpg
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/stream.mjpg >/dev/null 2>&1 || exit 1"]
-      interval: 20s
-      timeout: 6s
-      retries: 3
-      start_period: 15s
-
 volumes:
   samatha_data:
