@@ -336,11 +336,15 @@ h3 {
 }
 
 .avatar-core.vrm-needs-fallback .avatar-synth {
-  opacity: 0.92;
+  opacity: 0.98 !important;
 }
 
 .avatar-core.vrm-needs-fallback .avatar-overlay {
-  opacity: 0.34;
+  opacity: 0.9 !important;
+}
+
+.avatar-core.vrm-needs-fallback .vrm-canvas {
+  opacity: 0 !important;
 }
 
 .avatar-core.vrm-ready .avatar-synth,
@@ -348,6 +352,13 @@ h3 {
 .avatar-core.vrm-ready::before,
 .avatar-core.vrm-ready::after {
   opacity: 0;
+}
+
+.avatar-core.vrm-needs-fallback .avatar-synth,
+.avatar-core.vrm-needs-fallback .avatar-overlay,
+.avatar-core.vrm-needs-fallback::before,
+.avatar-core.vrm-needs-fallback::after {
+  opacity: 1;
 }
 
 .avatar-core.vrm-painted .avatar-synth,
