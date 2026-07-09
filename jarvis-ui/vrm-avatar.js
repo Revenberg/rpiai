@@ -43,6 +43,7 @@ const expressionState = {
   enabled: false
 };
 let renderProbeReady = false;
+const avatarFacingOffset = Math.PI;
 
 window.__vrmScene = scene;
 window.__vrmCamera = camera;
@@ -384,7 +385,7 @@ loader.load(
       window.__vrmRoot = currentRoot;
 
       // Some VRM exports already face forward; forcing PI can hide the face (backface culling).
-      currentRoot.rotation.y = 0;
+      currentRoot.rotation.y = avatarFacingOffset;
       if (!frameVrm(currentRoot)) {
         setAvatarTag("AI AVATAR: VRM FRAME ERROR");
         avatarCore.classList.remove("vrm-loading");
@@ -425,7 +426,7 @@ function animate(now) {
   if (currentVrm) {
     currentVrm.update(delta);
     if (currentRoot) {
-      currentRoot.rotation.y = Math.sin(now * 0.00035) * 0.12;
+      currentRoot.rotation.y = avatarFacingOffset + Math.sin(now * 0.00035) * 0.12;
     }
     applySearchingLook(now);
     applyFacialExpressions(currentVrm, now);
