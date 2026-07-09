@@ -142,13 +142,16 @@ function getStreamUrls() {
   const hostName = window.location.hostname;
 
   if (hostName) {
+    candidates.push(`${protocol}//${hostName}:8081/api/stream.mjpeg?src=usb`);
     candidates.push(`${protocol}//${hostName}:8081/stream.mjpg`);
   }
 
   if (hostName && hostName !== "localhost" && hostName !== "127.0.0.1") {
+    candidates.push("http://localhost:8081/api/stream.mjpeg?src=usb");
     candidates.push(DEFAULT_CAMERA_STREAM_URL);
   }
 
+  candidates.push("http://127.0.0.1:8081/api/stream.mjpeg?src=usb");
   candidates.push("http://127.0.0.1:8081/stream.mjpg");
 
   return Array.from(new Set(candidates));

@@ -19,5 +19,16 @@ services:
     volumes:
       - ./jarvis-ui:/usr/share/nginx/html:ro
 
+  camera-relay:
+    image: alexxit/go2rtc:latest
+    container_name: camera-relay
+    restart: unless-stopped
+    ports:
+      - "8081:1984"
+    devices:
+      - /dev/video0:/dev/video0
+    volumes:
+      - ./camera/go2rtc.yaml:/config/go2rtc.yaml:ro
+
 volumes:
   samatha_data:

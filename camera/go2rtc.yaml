@@ -1,0 +1,3 @@
+streams:
+  usb:
+    - v4l2:/dev/video0
