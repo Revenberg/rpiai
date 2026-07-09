@@ -58,7 +58,10 @@ function getHumanoidBone(humanoid, name) {
     return null;
   }
 
-  return humanoid.getNormalizedBoneNode(name) || humanoid.getRawBoneNode(name) || null;
+  const getNormalized = typeof humanoid.getNormalizedBoneNode === "function" ? humanoid.getNormalizedBoneNode.bind(humanoid) : null;
+  const getRaw = typeof humanoid.getRawBoneNode === "function" ? humanoid.getRawBoneNode.bind(humanoid) : null;
+
+  return (getNormalized ? getNormalized(name) : null) || (getRaw ? getRaw(name) : null) || null;
 }
 
 function configureScanBones(vrm) {
@@ -130,26 +133,35 @@ setAvatarTag("AI AVATAR: LOADING VRM");
 loader.load(
   "assets/vrm/fem_vroid.vrm",
   (gltf) => {
-    const vrm = gltf.userData.vrm;
-    if (!vrm) {
-      throw new Error("No VRM data in loaded model");
+    try {
+      const vrm = gltf?.userData?.vrm;
+      if (!vrm) {
+        setAvatarTag("AI AVATAR: VRM DATA MISSING");
+        return;
+      }
+
+      if (typeof VRMUtils.removeUnnecessaryVertices === "function") {
+        VRMUtils.removeUnnecessaryVertices(gltf.scene);
+      }
+      if (typeof VRMUtils.removeUnnecessaryJoints === "function") {
+        VRMUtils.removeUnnecessaryJoints(gltf.scene);
+      }
+
+      currentVrm = vrm;
+      scene.add(vrm.scene);
+
+      vrm.scene.rotation.y = Math.PI;
+      vrm.scene.position.set(0, -1.02, 0);
+
+      configureScanBones(vrm);
+
+      avatarCore.classList.add("vrm-ready");
+      setAvatarTag(scanState.enabled ? "AI AVATAR: FEM_VROID ONLINE - SCANNING" : "AI AVATAR: FEM_VROID ONLINE");
+
+      onResize();
+    } catch {
+      setAvatarTag("AI AVATAR: VRM LOAD ERROR");
     }
-
-    VRMUtils.removeUnnecessaryVertices(gltf.scene);
-    VRMUtils.removeUnnecessaryJoints(gltf.scene);
-
-    currentVrm = vrm;
-    scene.add(vrm.scene);
-
-    vrm.scene.rotation.y = Math.PI;
-    vrm.scene.position.set(0, -1.02, 0);
-
-    configureScanBones(vrm);
-
-    avatarCore.classList.add("vrm-ready");
-    setAvatarTag(scanState.enabled ? "AI AVATAR: FEM_VROID ONLINE - SCANNING" : "AI AVATAR: FEM_VROID ONLINE");
-
-    onResize();
   },
   undefined,
   () => {
