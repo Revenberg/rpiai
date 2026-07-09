@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JARVIS Avatar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../styles.css" />
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 25%, rgba(28, 99, 141, 0.36), transparent 34%),
+        radial-gradient(circle at 50% 50%, rgba(6, 22, 37, 0.88), rgba(2, 10, 20, 1) 68%);
+      color: #d6f5ff;
+      font-family: "Rajdhani", sans-serif;
+    }
+
+    .avatar-only-shell {
+      position: relative;
+      width: min(92vmin, 920px);
+      aspect-ratio: 1 / 1;
+      display: grid;
+      place-items: center;
+      padding: clamp(12px, 2.5vmin, 28px);
+      box-sizing: border-box;
+    }
+
+    .avatar-only-shell .avatar-stack {
+      width: 100%;
+      max-width: none;
+    }
+
+    .avatar-only-caption {
+      position: absolute;
+      left: 50%;
+      bottom: clamp(8px, 1.5vmin, 16px);
+      transform: translateX(-50%);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font: 700 clamp(0.72rem, 1.5vmin, 1rem) / 1 "Orbitron", sans-serif;
+      color: rgba(165, 233, 255, 0.85);
+      text-shadow: 0 0 12px rgba(38, 183, 255, 0.35);
+      pointer-events: none;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <main class="avatar-only-shell">
+    <div class="avatar-stack">
+      <div class="halo halo-1"></div>
+      <div class="halo halo-2"></div>
+      <div class="avatar-core">
+        <canvas id="vrmCanvas" class="vrm-canvas" aria-label="JARVIS VRM avatar"></canvas>
+        <div class="avatar-synth" aria-hidden="true"></div>
+        <div class="avatar-overlay"></div>
+      </div>
+      <div class="avatar-tag" id="avatarTag">AI AVATAR: INITIALISING</div>
+    </div>
+    <div class="avatar-only-caption">JARVIS AVATAR</div>
+  </main>
+
+  <script type="module" src="../vrm-avatar.js?v=20260709d"></script>
+</body>
+</html>
