@@ -94,6 +94,7 @@ function frameVrm(root) {
 
   // Normalize model origin so camera framing is reliable across different VRM exports.
   root.position.sub(tmpCenter);
+  root.position.y += tmpSize.y * 0.22;
   const targetY = THREE.MathUtils.clamp(tmpSize.y * 0.52, 0.36, 0.72);
   const fovRad = (camera.fov * Math.PI) / 180;
   const distance = (tmpSize.y * 0.5) / Math.tan(fovRad * 0.5);
