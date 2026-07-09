@@ -338,7 +338,7 @@ avatarCore.classList.add("vrm-loading");
 setAvatarTag("AI AVATAR: LOADING VRM");
 
 loader.load(
-  "assets/vrm/fem_vroid.vrm?v=20260709a",
+  "assets/vrm/Samatha.vrm?v=20260709b",
   (gltf) => {
     try {
       const vrm = gltf?.userData?.vrm;
