@@ -14,6 +14,9 @@ const scene = new THREE.Scene();
 const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.setClearColor(0x000000, 0);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
 
 const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 30);
 camera.position.set(0, 1.42, 1.25);
@@ -31,6 +34,7 @@ rimLight.position.set(0, 0.8, -1.2);
 scene.add(rimLight);
 
 scene.add(new THREE.AmbientLight(0x6ec8ff, 0.34));
+scene.add(new THREE.HemisphereLight(0x9ce8ff, 0x081525, 0.75));
 
 let currentVrm = null;
 let last = performance.now();
@@ -46,6 +50,33 @@ const scanState = {
 
 const tmpEuler = new THREE.Euler(0, 0, 0, "XYZ");
 const tmpQuat = new THREE.Quaternion();
+const tmpBox = new THREE.Box3();
+const tmpSize = new THREE.Vector3();
+const tmpCenter = new THREE.Vector3();
+
+function frameVrm(vrm) {
+  if (!vrm || !vrm.scene) {
+    return;
+  }
+
+  tmpBox.setFromObject(vrm.scene);
+  if (tmpBox.isEmpty()) {
+    return;
+  }
+
+  tmpBox.getSize(tmpSize);
+  tmpBox.getCenter(tmpCenter);
+
+  // Normalize model origin so camera framing is reliable across different VRM exports.
+  vrm.scene.position.sub(tmpCenter);
+  const headY = Math.max(tmpSize.y * 0.72, 0.7);
+
+  camera.near = 0.01;
+  camera.far = 100;
+  camera.position.set(0, headY, Math.max(tmpSize.z * 1.8, 1.05));
+  camera.lookAt(0, headY, 0);
+  camera.updateProjectionMatrix();
+}
 
 function setAvatarTag(text) {
   if (avatarTag) {
@@ -151,7 +182,7 @@ loader.load(
       scene.add(vrm.scene);
 
       vrm.scene.rotation.y = Math.PI;
-      vrm.scene.position.set(0, -1.02, 0);
+      frameVrm(vrm);
 
       configureScanBones(vrm);
 
