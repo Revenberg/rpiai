@@ -57,12 +57,16 @@ const tmpCenter = new THREE.Vector3();
 
 function frameVrm(root) {
   if (!root) {
-    return;
+    return false;
+  }
+
+  if (!root.scale || root.scale.x === 0 || root.scale.y === 0 || root.scale.z === 0) {
+    root.scale.set(1, 1, 1);
   }
 
   tmpBox.setFromObject(root);
   if (tmpBox.isEmpty()) {
-    return;
+    return false;
   }
 
   tmpBox.getSize(tmpSize);
@@ -77,6 +81,7 @@ function frameVrm(root) {
   camera.position.set(0, headY, Math.max(tmpSize.z * 1.8, 1.05));
   camera.lookAt(0, headY, 0);
   camera.updateProjectionMatrix();
+  return true;
 }
 
 function countRenderableMeshes(root) {
@@ -104,6 +109,7 @@ function forceMeshVisibility(root) {
 
     node.visible = true;
     node.frustumCulled = false;
+    node.layers.set(0);
 
     const materials = Array.isArray(node.material) ? node.material : [node.material];
     materials.filter(Boolean).forEach((mat) => {
@@ -225,7 +231,11 @@ loader.load(
 
       // Some VRM exports already face forward; forcing PI can hide the face (backface culling).
       currentRoot.rotation.y = 0;
-      frameVrm(currentRoot);
+      if (!frameVrm(currentRoot)) {
+        setAvatarTag("AI AVATAR: VRM FRAME ERROR");
+        avatarCore.classList.remove("vrm-ready");
+        return;
+      }
 
       configureScanBones(vrm);
 
