@@ -1,18 +1,18 @@
 homey:
   enabled: true
-  base_url: https://xxxxx.connect.athom.com
+  base_url: http://homey
   bearer_token: REPLACE_HOMEY_TOKEN
   timeout_seconds: 15
 
 homeassistant:
   instances:
-    home:
-      url: http://192.168.1.10:8123
-      token: REPLACE_HOME_ASSISTANT_HOME_TOKEN
+    energie:
+      url: http://192.168.1.123:8123
+      token: REPLACE_HOME_ASSISTANT_ENERGIE_TOKEN
       timeout_seconds: 15
-    scouting:
-      url: http://192.168.1.20:8123
-      token: REPLACE_HOME_ASSISTANT_SCOUTING_TOKEN
+    aanwezigheid:
+      url: http://192.168.1.80:8123
+      token: REPLACE_HOME_ASSISTANT_AANWEZIGHEID_TOKEN
       timeout_seconds: 15
 
 jwt:
