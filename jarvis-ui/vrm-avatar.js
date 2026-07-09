@@ -96,6 +96,27 @@ function countRenderableMeshes(root) {
   return count;
 }
 
+function forceMeshVisibility(root) {
+  root.traverse((node) => {
+    if (!node || !node.isMesh) {
+      return;
+    }
+
+    node.visible = true;
+    node.frustumCulled = false;
+
+    const materials = Array.isArray(node.material) ? node.material : [node.material];
+    materials.filter(Boolean).forEach((mat) => {
+      mat.visible = true;
+      mat.transparent = false;
+      mat.opacity = 1;
+      mat.depthWrite = true;
+      mat.side = THREE.DoubleSide;
+      mat.needsUpdate = true;
+    });
+  });
+}
+
 function setAvatarTag(text) {
   if (avatarTag) {
     avatarTag.textContent = text;
@@ -197,6 +218,8 @@ loader.load(
         avatarCore.classList.remove("vrm-ready");
         return;
       }
+
+      forceMeshVisibility(currentRoot);
 
       scene.add(currentRoot);
 
