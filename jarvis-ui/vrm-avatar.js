@@ -1,6 +1,6 @@
 import * as THREE from "./vendor/three/three.module.js";
 import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
-import { VRMLoaderPlugin, VRMUtils } from "./vendor/three-vrm/three-vrm.module.min.js";
+import { VRMLoaderPlugin } from "./vendor/three-vrm/three-vrm.module.min.js";
 
 const canvas = document.getElementById("vrmCanvas");
 const avatarCore = document.querySelector(".avatar-core");
@@ -77,6 +77,23 @@ function frameVrm(root) {
   camera.position.set(0, headY, Math.max(tmpSize.z * 1.8, 1.05));
   camera.lookAt(0, headY, 0);
   camera.updateProjectionMatrix();
+}
+
+function countRenderableMeshes(root) {
+  let count = 0;
+  root.traverse((node) => {
+    if (count > 0) {
+      return;
+    }
+    if (!node || !node.isMesh || !node.geometry) {
+      return;
+    }
+    const pos = node.geometry.getAttribute?.("position");
+    if (pos && pos.count > 0) {
+      count += 1;
+    }
+  });
+  return count;
 }
 
 function setAvatarTag(text) {
@@ -172,15 +189,15 @@ loader.load(
         return;
       }
 
-      if (typeof VRMUtils.removeUnnecessaryVertices === "function") {
-        VRMUtils.removeUnnecessaryVertices(gltf.scene);
-      }
-      if (typeof VRMUtils.removeUnnecessaryJoints === "function") {
-        VRMUtils.removeUnnecessaryJoints(gltf.scene);
-      }
-
       currentVrm = vrm;
       currentRoot = vrm.scene && vrm.scene.children.length > 0 ? vrm.scene : gltf.scene;
+
+      if (countRenderableMeshes(currentRoot) === 0) {
+        setAvatarTag("AI AVATAR: VRM EMPTY MESH");
+        avatarCore.classList.remove("vrm-ready");
+        return;
+      }
+
       scene.add(currentRoot);
 
       // Some VRM exports already face forward; forcing PI can hide the face (backface culling).
