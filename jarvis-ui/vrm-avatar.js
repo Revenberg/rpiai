@@ -16,25 +16,25 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.setClearColor(0x000000, 0);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+renderer.toneMappingExposure = 1.35;
 
 const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 30);
 camera.position.set(0, 1.42, 1.25);
 
-const keyLight = new THREE.DirectionalLight(0x93e5ff, 1.2);
+const keyLight = new THREE.DirectionalLight(0x93e5ff, 1.6);
 keyLight.position.set(1.6, 2.2, 2.1);
 scene.add(keyLight);
 
-const fillLight = new THREE.DirectionalLight(0x5bb5ff, 0.65);
+const fillLight = new THREE.DirectionalLight(0x5bb5ff, 0.95);
 fillLight.position.set(-1.2, 1.3, 1.6);
 scene.add(fillLight);
 
-const rimLight = new THREE.DirectionalLight(0x7bf0ff, 0.45);
+const rimLight = new THREE.DirectionalLight(0x7bf0ff, 0.8);
 rimLight.position.set(0, 0.8, -1.2);
 scene.add(rimLight);
 
-scene.add(new THREE.AmbientLight(0x6ec8ff, 0.34));
-scene.add(new THREE.HemisphereLight(0x9ce8ff, 0x081525, 0.75));
+scene.add(new THREE.AmbientLight(0x6ec8ff, 0.62));
+scene.add(new THREE.HemisphereLight(0xb8eeff, 0x0a1a2e, 1.05));
 
 let currentVrm = null;
 let currentRoot = null;
@@ -324,6 +324,7 @@ onResize();
 const loader = new GLTFLoader();
 loader.register((parser) => new VRMLoaderPlugin(parser));
 
+avatarCore.classList.add("vrm-loading");
 setAvatarTag("AI AVATAR: LOADING VRM");
 
 loader.load(
@@ -341,6 +342,7 @@ loader.load(
 
       if (countRenderableMeshes(currentRoot) === 0) {
         setAvatarTag("AI AVATAR: VRM EMPTY MESH");
+        avatarCore.classList.remove("vrm-loading");
         avatarCore.classList.remove("vrm-ready");
         return;
       }
@@ -354,6 +356,7 @@ loader.load(
       currentRoot.rotation.y = 0;
       if (!frameVrm(currentRoot)) {
         setAvatarTag("AI AVATAR: VRM FRAME ERROR");
+        avatarCore.classList.remove("vrm-loading");
         avatarCore.classList.remove("vrm-ready");
         return;
       }
@@ -361,6 +364,7 @@ loader.load(
       configureScanBones(vrm);
       applyFacialExpressions(vrm, performance.now());
 
+      avatarCore.classList.remove("vrm-loading");
       avatarCore.classList.add("vrm-ready");
       if (scanState.enabled && expressionState.enabled) {
         setAvatarTag("AI AVATAR: FEM_VROID ONLINE - EXPRESSIVE");
@@ -372,11 +376,13 @@ loader.load(
 
       onResize();
     } catch {
+      avatarCore.classList.remove("vrm-loading");
       setAvatarTag("AI AVATAR: VRM LOAD ERROR");
     }
   },
   undefined,
   () => {
+    avatarCore.classList.remove("vrm-loading");
     setAvatarTag("AI AVATAR: FALLBACK MODE");
   }
 );

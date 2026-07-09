@@ -323,6 +323,11 @@ h3 {
   transition: opacity 0.35s ease;
 }
 
+.avatar-core.vrm-loading .avatar-photo {
+  opacity: 0.05;
+  filter: saturate(0.5) contrast(1.1) brightness(0.42) hue-rotate(-22deg) blur(0.5px);
+}
+
 .avatar-core.vrm-ready .vrm-canvas {
   opacity: 1;
 }
@@ -358,8 +363,8 @@ h3 {
   object-fit: cover;
   object-position: 50% 24%;
   transform: scale(1.16);
-  opacity: 0.18;
-  filter: saturate(0.62) contrast(1.18) brightness(0.58) hue-rotate(-22deg) blur(0.45px);
+  opacity: 0.12;
+  filter: saturate(0.58) contrast(1.14) brightness(0.5) hue-rotate(-22deg) blur(0.45px);
 }
 
 .avatar-synth {
