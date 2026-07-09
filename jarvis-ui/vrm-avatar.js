@@ -1,6 +1,6 @@
-import * as THREE from "./vendor/three/three.module.js";
-import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
-import { VRMLoaderPlugin } from "./vendor/three-vrm/three-vrm.module.min.js";
+import * as THREE from "./vendor/three/three.module.js?v=20260709a";
+import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js?v=20260709a";
+import { VRMLoaderPlugin } from "./vendor/three-vrm/three-vrm.module.min.js?v=20260709a";
 
 const canvas = document.getElementById("vrmCanvas");
 const avatarCore = document.querySelector(".avatar-core");
@@ -327,7 +327,7 @@ loader.register((parser) => new VRMLoaderPlugin(parser));
 setAvatarTag("AI AVATAR: LOADING VRM");
 
 loader.load(
-  "assets/vrm/fem_vroid.vrm",
+  "assets/vrm/fem_vroid.vrm?v=20260709a",
   (gltf) => {
     try {
       const vrm = gltf?.userData?.vrm;
