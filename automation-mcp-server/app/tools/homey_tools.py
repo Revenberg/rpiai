@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, Any
-
-from pydantic import Field
+from typing import Any
 
 from app.providers.homey import HomeyProvider
 from app.utils.instrumentation import instrument_tool_call
@@ -23,7 +21,7 @@ def register_homey_tools(mcp: Any, provider: HomeyProvider | None, logger: Any) 
 
     @mcp.tool(name="homey.device", description="Get a Homey device by device ID.")
     async def homey_device(
-        device_id: Annotated[str, Field(description="Homey device ID")],
+        device_id: str,
     ) -> dict[str, Any]:
         if not provider:
             return fail("Homey disabled")
@@ -35,7 +33,7 @@ def register_homey_tools(mcp: Any, provider: HomeyProvider | None, logger: Any) 
         )
 
     @mcp.tool(name="homey.turn_on", description="Turn a Homey device on.")
-    async def homey_turn_on(device: Annotated[str, Field(description="Homey device ID")]) -> dict[str, Any]:
+    async def homey_turn_on(device: str) -> dict[str, Any]:
         if not provider:
             return fail("Homey disabled")
         return await instrument_tool_call(
@@ -46,7 +44,7 @@ def register_homey_tools(mcp: Any, provider: HomeyProvider | None, logger: Any) 
         )
 
     @mcp.tool(name="homey.turn_off", description="Turn a Homey device off.")
-    async def homey_turn_off(device: Annotated[str, Field(description="Homey device ID")]) -> dict[str, Any]:
+    async def homey_turn_off(device: str) -> dict[str, Any]:
         if not provider:
             return fail("Homey disabled")
         return await instrument_tool_call(
@@ -57,7 +55,7 @@ def register_homey_tools(mcp: Any, provider: HomeyProvider | None, logger: Any) 
         )
 
     @mcp.tool(name="homey.toggle", description="Toggle a Homey device.")
-    async def homey_toggle(device: Annotated[str, Field(description="Homey device ID")]) -> dict[str, Any]:
+    async def homey_toggle(device: str) -> dict[str, Any]:
         if not provider:
             return fail("Homey disabled")
         return await instrument_tool_call(
@@ -69,8 +67,8 @@ def register_homey_tools(mcp: Any, provider: HomeyProvider | None, logger: Any) 
 
     @mcp.tool(name="homey.set_dim", description="Set Homey dim level for a device.")
     async def homey_set_dim(
-        device: Annotated[str, Field(description="Homey device ID")],
-        value: Annotated[float, Field(ge=0.0, le=1.0, description="Dim value between 0.0 and 1.0")],
+        device: str,
+        value: float,
     ) -> dict[str, Any]:
         if not provider:
             return fail("Homey disabled")
@@ -83,8 +81,8 @@ def register_homey_tools(mcp: Any, provider: HomeyProvider | None, logger: Any) 
 
     @mcp.tool(name="homey.set_temperature", description="Set target temperature on a Homey thermostat device.")
     async def homey_set_temperature(
-        device: Annotated[str, Field(description="Homey device ID")],
-        value: Annotated[float, Field(description="Target temperature value")],
+        device: str,
+        value: float,
     ) -> dict[str, Any]:
         if not provider:
             return fail("Homey disabled")
@@ -97,9 +95,9 @@ def register_homey_tools(mcp: Any, provider: HomeyProvider | None, logger: Any) 
 
     @mcp.tool(name="homey.set_capability", description="Set any capability value on a Homey device.")
     async def homey_set_capability(
-        device: Annotated[str, Field(description="Homey device ID")],
-        capability: Annotated[str, Field(description="Capability name")],
-        value: Annotated[Any, Field(description="Capability value")],
+        device: str,
+        capability: str,
+        value: Any,
     ) -> dict[str, Any]:
         if not provider:
             return fail("Homey disabled")
@@ -111,7 +109,7 @@ def register_homey_tools(mcp: Any, provider: HomeyProvider | None, logger: Any) 
         )
 
     @mcp.tool(name="homey.run_flow", description="Run a Homey flow by flow name.")
-    async def homey_run_flow(flow_name: Annotated[str, Field(description="Homey flow name")]) -> dict[str, Any]:
+    async def homey_run_flow(flow_name: str) -> dict[str, Any]:
         if not provider:
             return fail("Homey disabled")
         return await instrument_tool_call(
@@ -155,7 +153,7 @@ def register_homey_tools(mcp: Any, provider: HomeyProvider | None, logger: Any) 
         )
 
     @mcp.tool(name="homey.get_variable", description="Get a Homey logic variable by name.")
-    async def homey_get_variable(name: Annotated[str, Field(description="Homey variable name")]) -> dict[str, Any]:
+    async def homey_get_variable(name: str) -> dict[str, Any]:
         if not provider:
             return fail("Homey disabled")
         return await instrument_tool_call(
@@ -167,8 +165,8 @@ def register_homey_tools(mcp: Any, provider: HomeyProvider | None, logger: Any) 
 
     @mcp.tool(name="homey.set_variable", description="Set a Homey logic variable by name.")
     async def homey_set_variable(
-        name: Annotated[str, Field(description="Homey variable name")],
-        value: Annotated[Any, Field(description="Variable value")],
+        name: str,
+        value: Any,
     ) -> dict[str, Any]:
         if not provider:
             return fail("Homey disabled")
