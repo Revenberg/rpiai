@@ -54,6 +54,76 @@
       pointer-events: none;
       user-select: none;
     }
+
+    .avatar-controls {
+      position: absolute;
+      right: clamp(8px, 2vmin, 20px);
+      top: clamp(8px, 2vmin, 20px);
+      width: min(42vw, 340px);
+      max-width: 92vw;
+      padding: 10px 12px;
+      border: 1px solid rgba(89, 188, 224, 0.35);
+      border-radius: 12px;
+      background: rgba(3, 15, 28, 0.78);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(2px);
+    }
+
+    .avatar-controls h2 {
+      margin: 0 0 8px;
+      font: 700 0.72rem/1 "Orbitron", sans-serif;
+      letter-spacing: 0.12em;
+      color: #9be8ff;
+      text-transform: uppercase;
+    }
+
+    .action-list {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .action-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.92rem;
+      color: #d5f6ff;
+    }
+
+    .play-btn {
+      border: 1px solid rgba(96, 208, 255, 0.45);
+      color: #d8f6ff;
+      background: linear-gradient(180deg, rgba(22, 84, 122, 0.76), rgba(10, 46, 72, 0.9));
+      border-radius: 999px;
+      font: 700 0.68rem/1 "Orbitron", sans-serif;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 7px 10px;
+      cursor: pointer;
+    }
+
+    .play-btn:active {
+      transform: translateY(1px);
+    }
+
+    .speak-input {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid rgba(88, 188, 235, 0.4);
+      background: rgba(2, 18, 34, 0.86);
+      color: #ddf8ff;
+      border-radius: 8px;
+      padding: 9px 10px;
+      font: 500 0.92rem/1.2 "Rajdhani", sans-serif;
+      outline: none;
+    }
+
+    .speak-input:focus {
+      border-color: rgba(108, 214, 255, 0.75);
+      box-shadow: 0 0 0 2px rgba(75, 188, 246, 0.2);
+    }
   </style>
 </head>
 <body>
@@ -69,8 +139,28 @@
       <div class="avatar-tag" id="avatarTag">AI AVATAR: INITIALISING</div>
     </div>
     <div class="avatar-only-caption">JARVIS AVATAR</div>
+
+    <section class="avatar-controls" aria-label="Avatar acties">
+      <h2>Acties</h2>
+      <div class="action-list">
+        <div class="action-row">
+          <span>Knipper met de ogen</span>
+          <button class="play-btn" type="button" data-action="blink">Play</button>
+        </div>
+        <div class="action-row">
+          <span>Knik ja</span>
+          <button class="play-btn" type="button" data-action="nod-yes">Play</button>
+        </div>
+        <div class="action-row">
+          <span>Knik nee</span>
+          <button class="play-btn" type="button" data-action="nod-no">Play</button>
+        </div>
+      </div>
+      <input id="speakInput" class="speak-input" type="text" placeholder="Typ tekst en druk Enter om te spreken" />
+    </section>
   </main>
 
   <script type="module" src="../vrm-avatar.js?v=20260709e"></script>
+  <script type="module" src="./avatar-controls.js?v=20260709a"></script>
 </body>
 </html>

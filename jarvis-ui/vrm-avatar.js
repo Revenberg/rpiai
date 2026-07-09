@@ -43,6 +43,14 @@ const expressionState = {
   enabled: false
 };
 const avatarFacingOffset = Math.PI;
+const actionState = {
+  blinkUntil: 0,
+  nodMode: null,
+  nodStart: 0,
+  nodDuration: 0,
+  speechUntil: 0,
+  speechSeed: 0
+};
 
 window.__vrmScene = scene;
 window.__vrmCamera = camera;
@@ -152,17 +160,17 @@ function setExpressionValue(vrm, name, value) {
   return applied;
 }
 
-function applyFacialExpressions(vrm, now) {
+function applyFacialExpressions(vrm, now, overrides = {}) {
   if (!vrm) {
     return;
   }
 
   const t = now * 0.001;
   const blinkPulse = Math.max(0, Math.sin(t * 4.2) * 2.2 - 1.15);
-  const blink = THREE.MathUtils.clamp(blinkPulse, 0, 1);
+  const blink = THREE.MathUtils.clamp(blinkPulse + (overrides.blink || 0), 0, 1);
   const smile = 0.14 + Math.max(0, Math.sin(t * 0.42 + 0.4)) * 0.22;
-  const mouth = Math.max(0, Math.sin(t * 2.25 + 1.1)) * 0.34;
-  const mouthWide = Math.max(0, Math.sin(t * 1.6 + 2.2)) * 0.2;
+  const mouth = THREE.MathUtils.clamp(Math.max(0, Math.sin(t * 2.25 + 1.1)) * 0.34 + (overrides.mouth || 0), 0, 1);
+  const mouthWide = THREE.MathUtils.clamp(Math.max(0, Math.sin(t * 1.6 + 2.2)) * 0.2 + (overrides.mouthWide || 0), 0, 1);
 
   const okBlink = setExpressionValue(vrm, "blink", blink);
   const okJoy = setExpressionValue(vrm, "joy", smile);
@@ -302,14 +310,22 @@ function applyBoneLook(node, yaw, pitch) {
   node.quaternion.copy(base).multiply(tmpQuat);
 }
 
-function applySearchingLook(now) {
+function getIdleLook(now) {
+  const t = now * 0.001;
+  return {
+    yaw: Math.sin(t * 0.65) * 0.22,
+    pitch: Math.sin(t * 0.31 + 1.2) * 0.055
+  };
+}
+
+function applySearchingLook(now, extra = { yaw: 0, pitch: 0 }) {
   if (!scanState.enabled) {
     return;
   }
 
-  const t = now * 0.001;
-  const yaw = Math.sin(t * 0.65) * 0.22;
-  const pitch = Math.sin(t * 0.31 + 1.2) * 0.055;
+  const idle = getIdleLook(now);
+  const yaw = idle.yaw + (extra.yaw || 0);
+  const pitch = idle.pitch + (extra.pitch || 0);
 
   // Subtle layered motion: neck follows, head leads, eyes track a bit further.
   applyBoneLook(scanState.neck, yaw * 0.3, pitch * 0.35);
@@ -317,6 +333,81 @@ function applySearchingLook(now) {
   applyBoneLook(scanState.leftEye, yaw * 0.9, pitch * 0.8);
   applyBoneLook(scanState.rightEye, yaw * 0.9, pitch * 0.8);
 }
+
+function computeActionOverrides(now) {
+  const expression = {
+    blink: 0,
+    mouth: 0,
+    mouthWide: 0
+  };
+  const look = {
+    yaw: 0,
+    pitch: 0
+  };
+
+  if (actionState.blinkUntil > now) {
+    expression.blink = 1;
+  }
+
+  if (actionState.nodMode && actionState.nodDuration > 0) {
+    const progress = (now - actionState.nodStart) / actionState.nodDuration;
+    if (progress >= 1) {
+      actionState.nodMode = null;
+      actionState.nodDuration = 0;
+    } else if (actionState.nodMode === "yes") {
+      const envelope = Math.sin(progress * Math.PI);
+      look.pitch = Math.sin(progress * Math.PI * 3.2) * 0.28 * envelope;
+    } else if (actionState.nodMode === "no") {
+      const envelope = Math.sin(progress * Math.PI);
+      look.yaw = Math.sin(progress * Math.PI * 3.6) * 0.42 * envelope;
+    }
+  }
+
+  if (actionState.speechUntil > now) {
+    const rhythmA = (Math.sin(now * 0.020 + actionState.speechSeed) + 1) * 0.5;
+    const rhythmB = (Math.sin(now * 0.013 + actionState.speechSeed * 0.7) + 1) * 0.5;
+    expression.mouth = 0.16 + rhythmA * 0.58;
+    expression.mouthWide = 0.08 + rhythmB * 0.34;
+  }
+
+  return { expression, look };
+}
+
+function triggerBlink() {
+  actionState.blinkUntil = performance.now() + 320;
+}
+
+function triggerNod(mode) {
+  actionState.nodMode = mode;
+  actionState.nodStart = performance.now();
+  actionState.nodDuration = 1200;
+}
+
+function triggerSpeak(text) {
+  const trimmed = String(text || "").trim();
+  if (!trimmed) {
+    return false;
+  }
+
+  let seed = 0;
+  for (let i = 0; i < trimmed.length; i += 1) {
+    seed += trimmed.charCodeAt(i);
+  }
+
+  const now = performance.now();
+  actionState.speechSeed = seed * 0.001;
+  actionState.speechUntil = now + THREE.MathUtils.clamp(trimmed.length * 85, 900, 9000);
+  setAvatarTag(`AI AVATAR: SPEAKING - ${trimmed.slice(0, 36).toUpperCase()}`);
+  return true;
+}
+
+window.__vrmApi = {
+  blink: triggerBlink,
+  nodYes: () => triggerNod("yes"),
+  nodNo: () => triggerNod("no"),
+  speakText: triggerSpeak,
+  isReady: () => !!currentVrm
+};
 
 function onResize() {
   const rect = avatarCore.getBoundingClientRect();
@@ -409,8 +500,14 @@ function animate(now) {
     if (currentRoot) {
       currentRoot.rotation.y = avatarFacingOffset + Math.sin(now * 0.00035) * 0.12;
     }
-    applySearchingLook(now);
-    applyFacialExpressions(currentVrm, now);
+    const actionOverrides = computeActionOverrides(now);
+    applySearchingLook(now, actionOverrides.look);
+    applyFacialExpressions(currentVrm, now, actionOverrides.expression);
+
+    if (actionState.speechUntil > 0 && actionState.speechUntil <= now) {
+      actionState.speechUntil = 0;
+      setAvatarTag("AI AVATAR: FEM_VROID ONLINE - EXPRESSIVE");
+    }
   }
 
   renderer.render(scene, camera);
