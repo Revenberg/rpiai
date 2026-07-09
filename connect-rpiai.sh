@@ -58,11 +58,6 @@ if [[ -n "$SSHPASS_BIN" && -f "$PASSWORD_FILE" ]]; then
 fi
 
 run_ssh() {
-  # Prefer key-based SSH when configured; fallback to sshpass/password file.
-  if ssh -o BatchMode=yes "${SSH_OPTS[@]}" "$@" 2>/dev/null; then
-    return 0
-  fi
-
   if [[ "$USE_SSHPASS" -eq 1 ]]; then
     "$SSHPASS_BIN" -p "$PASSWORD" ssh "${SSH_OPTS[@]}" "$@"
   else

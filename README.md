@@ -177,6 +177,36 @@ Create or identify a Flow in Homey that opens hek, then trigger it through Homey
 - Add health checks and auto-restart policy
 - Add secure token handling using environment variables
 
+## Action Hub (Persistent Actions)
+
+The repository now includes an Action Hub service that stores action history in SQLite and can execute actions against Home Assistant and Homey.
+
+Files:
+
+- `action-hub/server.py`
+- `action-hub/Dockerfile`
+- `action-hub/README.md`
+
+Run with Docker Compose:
+
+```bash
+cp .env.example .env
+# fill in tokens and optional HOMEY_BASE_URL
+docker compose up -d --build action-hub jarvis-ui
+```
+
+Endpoints:
+
+- `GET /health`
+- `GET /api/actions?limit=50`
+- `POST /api/actions`
+- `POST /api/actions/execute`
+
+UI integration:
+
+- `jarvis-ui/app.js` fetches actions from `http://<host>:3002/api/actions`
+- falls back to built-in sample data when Action Hub is unavailable
+
 ## Full Repeat Flow (Host + Scripts)
 
 Run all operations on the Raspberry Pi host from the repository root.

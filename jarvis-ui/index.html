@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>JARVIS Dashboard</title>
+  <title>Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -16,7 +16,7 @@
   <main class="shell">
     <header class="topbar frame">
       <div class="top-left"><span id="dayLabel">VRIJDAG 23 MEI 2025</span></div>
-      <div class="brand">JARVIS</div>
+      <div class="brand"></div>
       <div class="top-right"><span id="tempLabel">18C</span> GEDEELTELIJK BEWOLKT</div>
     </header>
 
@@ -59,7 +59,7 @@
             <div class="halo halo-1"></div>
             <div class="halo halo-2"></div>
             <div class="avatar-core">
-              <canvas id="vrmCanvas" class="vrm-canvas" aria-label="JARVIS VRM avatar"></canvas>
+              <canvas id="vrmCanvas" class="vrm-canvas" aria-label="VRM avatar"></canvas>
               <div class="avatar-synth" aria-hidden="true"></div>
               <div class="avatar-overlay"></div>
             </div>
@@ -107,6 +107,60 @@
 
         <article class="card frame actions-card">
           <h3>ACTIES</h3>
+          <section class="action-builder" aria-label="Actie definiëren en testen">
+            <div class="action-grid-two">
+              <div>
+                <label class="action-label" for="actionPresetSelect">Preset</label>
+                <select id="actionPresetSelect" class="action-select">
+                  <option value="">Nieuw preset...</option>
+                </select>
+              </div>
+              <div>
+                <label class="action-label" for="actionPresetName">Preset naam</label>
+                <input id="actionPresetName" class="action-input" type="text" placeholder="Bijv. Woonkamer licht 40%" />
+              </div>
+            </div>
+
+            <div class="action-inline action-inline-buttons">
+              <button id="savePresetBtn" class="action-btn" type="button">Preset opslaan</button>
+              <button id="deletePresetBtn" class="action-btn" type="button" disabled>Preset verwijderen</button>
+            </div>
+
+            <label class="action-label" for="actionNameInput">Omschrijving</label>
+            <div class="action-inline">
+              <input id="actionNameInput" class="action-input" type="text" placeholder="Bijv. Zet woonkamerlamp op 40%" />
+              <button id="rewriteActionBtn" class="action-btn" type="button">Verbeter tekst</button>
+            </div>
+
+            <div class="action-grid-two">
+              <div>
+                <label class="action-label" for="actionTarget">Doel</label>
+                <select id="actionTarget" class="action-select">
+                  <option value="home_assistant_presence">Home Assistant Presence</option>
+                  <option value="home_assistant_energy">Home Assistant Energy</option>
+                  <option value="homey">Homey</option>
+                </select>
+              </div>
+              <div>
+                <label class="action-label" for="actionCommand">Commando</label>
+                <select id="actionCommand" class="action-select">
+                  <option value="get_states">get_states</option>
+                  <option value="call_service">call_service</option>
+                  <option value="request">request</option>
+                </select>
+              </div>
+            </div>
+
+            <label class="action-label" for="actionPayload">Payload (JSON)</label>
+            <textarea id="actionPayload" class="action-textarea" rows="4" placeholder='{"domain":"light","service":"turn_on","data":{"entity_id":"light.woonkamer"}}'></textarea>
+
+            <div class="action-inline">
+              <button id="testActionBtn" class="action-btn" type="button">Test actie</button>
+              <button id="saveActionBtn" class="action-btn primary" type="button" disabled>Opslaan na test</button>
+            </div>
+            <div id="actionBuilderStatus" class="action-status">Definieer een actie en test eerst.</div>
+          </section>
+
           <div id="actionLog" class="action-log"></div>
           <a class="more-link" href="#">Bekijk alle acties</a>
         </article>

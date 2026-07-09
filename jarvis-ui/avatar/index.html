@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>JARVIS Avatar</title>
+  <title>Avatar</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -20,9 +20,9 @@
       place-items: center;
       overflow: hidden;
       background:
-        radial-gradient(circle at 50% 25%, rgba(28, 99, 141, 0.36), transparent 34%),
-        radial-gradient(circle at 50% 50%, rgba(6, 22, 37, 0.88), rgba(2, 10, 20, 1) 68%);
-      color: #d6f5ff;
+        radial-gradient(circle at 50% 25%, rgba(78, 129, 72, 0.36), transparent 34%),
+        radial-gradient(circle at 50% 50%, rgba(12, 24, 14, 0.88), rgba(8, 14, 9, 1) 68%);
+      color: #dcefd2;
       font-family: "Rajdhani", sans-serif;
     }
 
@@ -49,8 +49,8 @@
       letter-spacing: 0.18em;
       text-transform: uppercase;
       font: 700 clamp(0.72rem, 1.5vmin, 1rem) / 1 "Orbitron", sans-serif;
-      color: rgba(165, 233, 255, 0.85);
-      text-shadow: 0 0 12px rgba(38, 183, 255, 0.35);
+      color: rgba(187, 222, 162, 0.85);
+      text-shadow: 0 0 12px rgba(122, 178, 98, 0.35);
       pointer-events: none;
       user-select: none;
     }
@@ -62,9 +62,9 @@
       width: min(42vw, 340px);
       max-width: 92vw;
       padding: 10px 12px;
-      border: 1px solid rgba(89, 188, 224, 0.35);
+      border: 1px solid rgba(129, 178, 108, 0.35);
       border-radius: 12px;
-      background: rgba(3, 15, 28, 0.78);
+      background: rgba(9, 19, 10, 0.78);
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
       backdrop-filter: blur(2px);
     }
@@ -73,7 +73,7 @@
       margin: 0 0 8px;
       font: 700 0.72rem/1 "Orbitron", sans-serif;
       letter-spacing: 0.12em;
-      color: #9be8ff;
+      color: #b8d99d;
       text-transform: uppercase;
     }
 
@@ -89,13 +89,13 @@
       align-items: center;
       gap: 8px;
       font-size: 0.92rem;
-      color: #d5f6ff;
+      color: #def1cf;
     }
 
     .play-btn {
-      border: 1px solid rgba(96, 208, 255, 0.45);
-      color: #d8f6ff;
-      background: linear-gradient(180deg, rgba(22, 84, 122, 0.76), rgba(10, 46, 72, 0.9));
+      border: 1px solid rgba(138, 191, 116, 0.45);
+      color: #e7f5dd;
+      background: linear-gradient(180deg, rgba(64, 102, 52, 0.76), rgba(32, 58, 24, 0.9));
       border-radius: 999px;
       font: 700 0.68rem/1 "Orbitron", sans-serif;
       letter-spacing: 0.1em;
@@ -111,9 +111,9 @@
     .speak-input {
       width: 100%;
       box-sizing: border-box;
-      border: 1px solid rgba(88, 188, 235, 0.4);
-      background: rgba(2, 18, 34, 0.86);
-      color: #ddf8ff;
+      border: 1px solid rgba(132, 183, 109, 0.4);
+      background: rgba(11, 21, 12, 0.86);
+      color: #e1f0d7;
       border-radius: 8px;
       padding: 9px 10px;
       font: 500 0.92rem/1.2 "Rajdhani", sans-serif;
@@ -121,8 +121,8 @@
     }
 
     .speak-input:focus {
-      border-color: rgba(108, 214, 255, 0.75);
-      box-shadow: 0 0 0 2px rgba(75, 188, 246, 0.2);
+      border-color: rgba(151, 203, 120, 0.75);
+      box-shadow: 0 0 0 2px rgba(116, 176, 96, 0.2);
     }
   </style>
 </head>
@@ -132,13 +132,13 @@
       <div class="halo halo-1"></div>
       <div class="halo halo-2"></div>
       <div class="avatar-core">
-        <canvas id="vrmCanvas" class="vrm-canvas" aria-label="JARVIS VRM avatar"></canvas>
+        <canvas id="vrmCanvas" class="vrm-canvas" aria-label="VRM avatar"></canvas>
         <div class="avatar-synth" aria-hidden="true"></div>
         <div class="avatar-overlay"></div>
       </div>
       <div class="avatar-tag" id="avatarTag">AI AVATAR: INITIALISING</div>
     </div>
-    <div class="avatar-only-caption">JARVIS AVATAR</div>
+    <div class="avatar-only-caption"></div>
 
     <section class="avatar-controls" aria-label="Avatar acties">
       <h2>Acties</h2>

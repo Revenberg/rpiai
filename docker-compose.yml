@@ -30,5 +30,26 @@ services:
     volumes:
       - ./camera/go2rtc.yaml:/config/go2rtc.yaml:ro
 
+  action-hub:
+    build:
+      context: ./action-hub
+    container_name: action-hub
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    volumes:
+      - action_data:/data
+    environment:
+      ACTION_DB_PATH: /data/actions.db
+      HA_PRESENCE_BASE_URL: http://192.168.1.80:8123
+      HA_ENERGY_BASE_URL: http://192.168.1.123:8123
+      SAMATHA_BASE_URL: ${SAMATHA_BASE_URL:-http://samatha-ai:8080}
+      HOMEY_BASE_URL: ${HOMEY_BASE_URL:-}
+      HA_PRESENCE_TOKEN: ${HA_PRESENCE_TOKEN:-}
+      HA_ENERGY_TOKEN: ${HA_ENERGY_TOKEN:-}
+      HOMEY_TOKEN: ${HOMEY_TOKEN:-}
+      SAMATHA_API_KEY: ${SAMATHA_API_KEY:-}
+
 volumes:
   samatha_data:
+  action_data:

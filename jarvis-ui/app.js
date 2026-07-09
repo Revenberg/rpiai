@@ -11,6 +11,18 @@ const cameraFallbackEl = document.getElementById("cameraFallback");
 const cameraStateEl = document.getElementById("cameraState");
 const camPillEl = document.getElementById("camPill");
 const camPillTextEl = document.getElementById("camPillText");
+const actionNameInputEl = document.getElementById("actionNameInput");
+const actionTargetEl = document.getElementById("actionTarget");
+const actionCommandEl = document.getElementById("actionCommand");
+const actionPayloadEl = document.getElementById("actionPayload");
+const actionPresetSelectEl = document.getElementById("actionPresetSelect");
+const actionPresetNameEl = document.getElementById("actionPresetName");
+const savePresetBtnEl = document.getElementById("savePresetBtn");
+const deletePresetBtnEl = document.getElementById("deletePresetBtn");
+const rewriteActionBtnEl = document.getElementById("rewriteActionBtn");
+const testActionBtnEl = document.getElementById("testActionBtn");
+const saveActionBtnEl = document.getElementById("saveActionBtn");
+const actionBuilderStatusEl = document.getElementById("actionBuilderStatus");
 
 const DEFAULT_CAMERA_STREAM_URL = "http://localhost:8081/stream.mjpg";
 
@@ -28,7 +40,7 @@ const messages = [
   { who: "Samantha", text: "Het hek is geopend.", time: "15:42:18" }
 ];
 
-const actions = [
+const fallbackActions = [
   { time: "15:42:18", text: "Lichten woonkamer gedimd naar 30%", source: "Homey" },
   { time: "15:42:05", text: "Hek geopend", source: "Homey" },
   { time: "15:40:12", text: "Thermostaat staat ingesteld op 20 C", source: "Home Assistant" },
@@ -38,6 +50,9 @@ const actions = [
 
 const navItems = ["OVERZICHT", "VERLICHTING", "KLIMAAT", "BEVEILIGING", "ENERGIE", "MEDIA", "INSTELLINGEN"];
 const speechStates = ["Ik luister...", "Commando ontvangen", "Samantha verwerkt actie", "Systeem standby"];
+let lastSuccessfulTestSignature = null;
+let lastSuccessfulTestResult = null;
+let presetListCache = [];
 
 function initials(name) {
   return name.slice(0, 1);
@@ -72,12 +87,63 @@ function renderMessages() {
 }
 
 function renderActions() {
-  actions.forEach((item) => {
+  actionLogEl.innerHTML = "";
+  fallbackActions.forEach((item) => {
     const row = document.createElement("article");
     row.className = "action-item";
     row.innerHTML = `<div>${item.text}</div><div class="meta">${item.time} • ${item.source}</div>`;
     actionLogEl.appendChild(row);
   });
+}
+
+function getActionHubBaseUrl() {
+  const protocol = window.location.protocol === "https:" ? "https:" : "http:";
+  const hostName = window.location.hostname || "localhost";
+  return `${protocol}//${hostName}:3002`;
+}
+
+function formatActionTime(raw) {
+  if (!raw) {
+    return "--:--:--";
+  }
+
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) {
+    return "--:--:--";
+  }
+
+  return d.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+async function loadActionsFromHub() {
+  if (!actionLogEl) {
+    return;
+  }
+
+  try {
+    const res = await fetch(`${getActionHubBaseUrl()}/api/actions?limit=12`);
+    if (!res.ok) {
+      throw new Error(`Action hub returned ${res.status}`);
+    }
+
+    const data = await res.json();
+    const actions = Array.isArray(data?.actions) ? data.actions : [];
+    if (actions.length === 0) {
+      renderActions();
+      return;
+    }
+
+    actionLogEl.innerHTML = "";
+    actions.forEach((item) => {
+      const row = document.createElement("article");
+      row.className = "action-item";
+      const source = item.source || "Samantha";
+      row.innerHTML = `<div>${item.text || "Actie"}</div><div class="meta">${formatActionTime(item.created_at)} • ${source}</div>`;
+      actionLogEl.appendChild(row);
+    });
+  } catch {
+    renderActions();
+  }
 }
 
 function renderNav() {
@@ -88,6 +154,404 @@ function renderNav() {
     node.textContent = item;
     bottomNavEl.appendChild(node);
   });
+}
+
+function setBuilderStatus(text, isError = false) {
+  if (!actionBuilderStatusEl) {
+    return;
+  }
+
+  actionBuilderStatusEl.textContent = text;
+  actionBuilderStatusEl.classList.toggle("error", isError);
+}
+
+function stableStringify(value) {
+  if (value === null || typeof value !== "object") {
+    return JSON.stringify(value);
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(",")}]`;
+  }
+
+  const keys = Object.keys(value).sort();
+  return `{${keys.map((k) => `${JSON.stringify(k)}:${stableStringify(value[k])}`).join(",")}}`;
+}
+
+function parsePayloadJson() {
+  const raw = (actionPayloadEl?.value || "").trim();
+  if (!raw) {
+    return {};
+  }
+
+  return JSON.parse(raw);
+}
+
+function buildActionDefinition() {
+  const text = (actionNameInputEl?.value || "").trim();
+  const target = (actionTargetEl?.value || "").trim();
+  const command = (actionCommandEl?.value || "").trim();
+  const payload = parsePayloadJson();
+
+  if (!text) {
+    throw new Error("Omschrijving is verplicht");
+  }
+
+  if (!target || !command) {
+    throw new Error("Doel en commando zijn verplicht");
+  }
+
+  return { text, target, command, payload };
+}
+
+function getDefinitionSignature(definition) {
+  return `${definition.text}|${definition.target}|${definition.command}|${stableStringify(definition.payload)}`;
+}
+
+function getSelectedPresetId() {
+  if (!actionPresetSelectEl || !actionPresetSelectEl.value) {
+    return null;
+  }
+
+  const id = Number.parseInt(actionPresetSelectEl.value, 10);
+  return Number.isFinite(id) ? id : null;
+}
+
+function applyPresetToBuilder(preset) {
+  if (!preset) {
+    return;
+  }
+
+  if (actionPresetNameEl) {
+    actionPresetNameEl.value = preset.name || "";
+  }
+  if (actionNameInputEl) {
+    actionNameInputEl.value = preset.text || "";
+  }
+  if (actionTargetEl) {
+    actionTargetEl.value = preset.target || "home_assistant_presence";
+  }
+  if (actionCommandEl) {
+    actionCommandEl.value = preset.command || "get_states";
+  }
+  if (actionPayloadEl) {
+    actionPayloadEl.value = JSON.stringify(preset.payload || {}, null, 2);
+  }
+}
+
+function renderPresetSelect(selectedId = null) {
+  if (!actionPresetSelectEl) {
+    return;
+  }
+
+  const previous = selectedId ?? getSelectedPresetId();
+  actionPresetSelectEl.innerHTML = "";
+
+  const defaultOption = document.createElement("option");
+  defaultOption.value = "";
+  defaultOption.textContent = "Nieuw preset...";
+  actionPresetSelectEl.appendChild(defaultOption);
+
+  presetListCache.forEach((preset) => {
+    const option = document.createElement("option");
+    option.value = String(preset.id);
+    option.textContent = preset.name;
+    actionPresetSelectEl.appendChild(option);
+  });
+
+  if (previous) {
+    actionPresetSelectEl.value = String(previous);
+  }
+
+  const activeId = getSelectedPresetId();
+  if (deletePresetBtnEl) {
+    deletePresetBtnEl.disabled = !activeId;
+  }
+}
+
+async function loadPresetsFromHub(selectedId = null) {
+  if (!actionPresetSelectEl) {
+    return;
+  }
+
+  try {
+    const res = await fetch(`${getActionHubBaseUrl()}/api/presets`);
+    if (!res.ok) {
+      throw new Error(`Preset laden mislukt (${res.status})`);
+    }
+    const data = await res.json();
+    presetListCache = Array.isArray(data?.presets) ? data.presets : [];
+    renderPresetSelect(selectedId);
+  } catch {
+    presetListCache = [];
+    renderPresetSelect(null);
+  }
+}
+
+function handlePresetSelectionChange() {
+  const presetId = getSelectedPresetId();
+  if (!presetId) {
+    if (actionPresetNameEl) {
+      actionPresetNameEl.value = "";
+    }
+    if (deletePresetBtnEl) {
+      deletePresetBtnEl.disabled = true;
+    }
+    return;
+  }
+
+  const preset = presetListCache.find((p) => p.id === presetId);
+  if (!preset) {
+    return;
+  }
+
+  applyPresetToBuilder(preset);
+  invalidateTestResult();
+  if (deletePresetBtnEl) {
+    deletePresetBtnEl.disabled = false;
+  }
+  setBuilderStatus(`Preset '${preset.name}' geladen. Test opnieuw voor opslaan.`);
+}
+
+async function saveOrUpdatePreset() {
+  if (!savePresetBtnEl) {
+    return;
+  }
+
+  savePresetBtnEl.disabled = true;
+  try {
+    const definition = buildActionDefinition();
+    const presetName = (actionPresetNameEl?.value || "").trim() || definition.text;
+    const presetId = getSelectedPresetId();
+    const payload = {
+      name: presetName,
+      text: definition.text,
+      target: definition.target,
+      command: definition.command,
+      payload: definition.payload
+    };
+
+    const method = presetId ? "PUT" : "POST";
+    const url = presetId
+      ? `${getActionHubBaseUrl()}/api/presets/${presetId}`
+      : `${getActionHubBaseUrl()}/api/presets`;
+
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok || !data?.ok) {
+      throw new Error(data?.error || "Preset opslaan mislukt");
+    }
+
+    const selected = data?.id || presetId;
+    await loadPresetsFromHub(selected);
+    setBuilderStatus(presetId ? "Preset bijgewerkt." : "Nieuw preset opgeslagen.");
+  } catch (err) {
+    setBuilderStatus(err.message || "Preset opslaan mislukt.", true);
+  } finally {
+    savePresetBtnEl.disabled = false;
+  }
+}
+
+async function deleteSelectedPreset() {
+  const presetId = getSelectedPresetId();
+  if (!presetId || !deletePresetBtnEl) {
+    return;
+  }
+
+  deletePresetBtnEl.disabled = true;
+  try {
+    const res = await fetch(`${getActionHubBaseUrl()}/api/presets/${presetId}`, {
+      method: "DELETE"
+    });
+    const data = await res.json();
+    if (!res.ok || !data?.ok) {
+      throw new Error(data?.error || "Preset verwijderen mislukt");
+    }
+
+    if (actionPresetNameEl) {
+      actionPresetNameEl.value = "";
+    }
+    await loadPresetsFromHub(null);
+    setBuilderStatus("Preset verwijderd.");
+  } catch (err) {
+    setBuilderStatus(err.message || "Preset verwijderen mislukt.", true);
+  } finally {
+    deletePresetBtnEl.disabled = false;
+  }
+}
+
+function invalidateTestResult() {
+  lastSuccessfulTestSignature = null;
+  lastSuccessfulTestResult = null;
+  if (saveActionBtnEl) {
+    saveActionBtnEl.disabled = true;
+  }
+}
+
+async function rewriteActionTextWithSamatha() {
+  if (!actionNameInputEl) {
+    return;
+  }
+
+  const text = actionNameInputEl.value.trim();
+  if (!text) {
+    setBuilderStatus("Vul eerst een omschrijving in.", true);
+    return;
+  }
+
+  rewriteActionBtnEl.disabled = true;
+  setBuilderStatus("Samantha verbetert de omschrijving...");
+
+  try {
+    const payload = {
+      text,
+      target: (actionTargetEl?.value || "").trim(),
+      command: (actionCommandEl?.value || "").trim(),
+      payload: parsePayloadJson()
+    };
+
+    const res = await fetch(`${getActionHubBaseUrl()}/api/actions/rewrite`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      throw new Error(`Rewrite mislukt (${res.status})`);
+    }
+
+    const data = await res.json();
+    const improved = data?.suggested_text || text;
+    actionNameInputEl.value = improved;
+    invalidateTestResult();
+    setBuilderStatus("Omschrijving verbeterd door Samantha. Test nu de actie.");
+  } catch (err) {
+    setBuilderStatus(err.message || "Kon tekst niet verbeteren.", true);
+  } finally {
+    rewriteActionBtnEl.disabled = false;
+  }
+}
+
+async function testActionDefinition() {
+  if (!testActionBtnEl) {
+    return;
+  }
+
+  testActionBtnEl.disabled = true;
+  invalidateTestResult();
+
+  try {
+    const definition = buildActionDefinition();
+    setBuilderStatus("Test uitvoeren...");
+
+    const res = await fetch(`${getActionHubBaseUrl()}/api/actions/execute`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        source: "action-builder-test",
+        text: definition.text,
+        target: definition.target,
+        command: definition.command,
+        payload: definition.payload,
+        test_only: true
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data?.ok) {
+      const details = data?.result?.error || data?.error || "Onbekende fout";
+      throw new Error(`Test mislukt: ${details}`);
+    }
+
+    lastSuccessfulTestSignature = getDefinitionSignature(definition);
+    lastSuccessfulTestResult = data?.result || {};
+    if (saveActionBtnEl) {
+      saveActionBtnEl.disabled = false;
+    }
+    setBuilderStatus("Test geslaagd. Je kunt nu opslaan.");
+  } catch (err) {
+    setBuilderStatus(err.message || "Test mislukt.", true);
+  } finally {
+    testActionBtnEl.disabled = false;
+  }
+}
+
+async function saveValidatedAction() {
+  if (!saveActionBtnEl) {
+    return;
+  }
+
+  saveActionBtnEl.disabled = true;
+  try {
+    const definition = buildActionDefinition();
+    const signature = getDefinitionSignature(definition);
+    if (!lastSuccessfulTestSignature || signature !== lastSuccessfulTestSignature) {
+      throw new Error("Actie is gewijzigd. Test opnieuw voordat je opslaat.");
+    }
+
+    const payload = {
+      source: "action-builder",
+      status: "validated",
+      text: definition.text,
+      target: definition.target,
+      command: definition.command,
+      payload: {
+        definition: definition.payload,
+        validated_by: "samantha-ai",
+        validated_at: new Date().toISOString(),
+        test_result: lastSuccessfulTestResult || {}
+      }
+    };
+
+    const res = await fetch(`${getActionHubBaseUrl()}/api/actions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok || !data?.ok) {
+      throw new Error(data?.error || "Opslaan mislukt");
+    }
+
+    setBuilderStatus("Actie opgeslagen na geslaagde test.");
+    loadActionsFromHub();
+  } catch (err) {
+    setBuilderStatus(err.message || "Opslaan mislukt.", true);
+  } finally {
+    if (saveActionBtnEl) {
+      saveActionBtnEl.disabled = false;
+    }
+  }
+}
+
+function wireActionBuilder() {
+  if (!actionNameInputEl || !actionTargetEl || !actionCommandEl || !actionPayloadEl) {
+    return;
+  }
+
+  const invalidate = () => {
+    invalidateTestResult();
+    setBuilderStatus("Wijziging gedetecteerd. Test opnieuw voor opslaan.");
+  };
+
+  actionNameInputEl.addEventListener("input", invalidate);
+  actionTargetEl.addEventListener("change", invalidate);
+  actionCommandEl.addEventListener("change", invalidate);
+  actionPayloadEl.addEventListener("input", invalidate);
+  actionPresetSelectEl?.addEventListener("change", handlePresetSelectionChange);
+
+  savePresetBtnEl?.addEventListener("click", saveOrUpdatePreset);
+  deletePresetBtnEl?.addEventListener("click", deleteSelectedPreset);
+
+  rewriteActionBtnEl?.addEventListener("click", rewriteActionTextWithSamatha);
+  testActionBtnEl?.addEventListener("click", testActionDefinition);
+  saveActionBtnEl?.addEventListener("click", saveValidatedAction);
+
+  loadPresetsFromHub();
 }
 
 function updateClock() {
@@ -275,6 +739,9 @@ renderActions();
 renderNav();
 updateClock();
 initCamera();
+loadActionsFromHub();
+wireActionBuilder();
 
 setInterval(updateClock, 1000);
 setInterval(cycleSpeech, 3800);
+setInterval(loadActionsFromHub, 10000);
