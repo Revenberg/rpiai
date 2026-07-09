@@ -1,6 +1,6 @@
-import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
-import { GLTFLoader } from "https://unpkg.com/three@0.165.0/examples/jsm/loaders/GLTFLoader.js";
-import { VRMLoaderPlugin, VRMUtils } from "https://unpkg.com/@pixiv/three-vrm@2.1.1/lib/three-vrm.module.min.js";
+import * as THREE from "./vendor/three/three.module.js";
+import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
+import { VRMLoaderPlugin, VRMUtils } from "./vendor/three-vrm/three-vrm.module.min.js";
 
 const canvas = document.getElementById("vrmCanvas");
 const avatarCore = document.querySelector(".avatar-core");
