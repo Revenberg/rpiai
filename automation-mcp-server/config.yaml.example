@@ -1,0 +1,27 @@
+homey:
+  enabled: true
+  base_url: https://xxxxx.connect.athom.com
+  bearer_token: YOUR_HOMEY_TOKEN
+  timeout_seconds: 15
+
+homeassistant:
+  instances:
+    home:
+      url: http://192.168.1.10:8123
+      token: LONG_LIVED_TOKEN
+      timeout_seconds: 15
+    scouting:
+      url: http://192.168.1.20:8123
+      token: LONG_LIVED_TOKEN
+      timeout_seconds: 15
+
+jwt:
+  enabled: false
+  secret_key: CHANGE_ME
+  algorithm: HS256
+  audience: null
+  issuer: null
+
+server:
+  host: 0.0.0.0
+  port: 8080
