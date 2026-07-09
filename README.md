@@ -195,6 +195,17 @@ cp .env.example .env
 docker compose up -d --build action-hub jarvis-ui
 ```
 
+Samatha OpenAI/OpenAPI config:
+
+```bash
+# in .env
+SAMATHA_OPENAI_API_BASE_URL=https://api.openai.com/v1
+SAMATHA_OPENAI_API_KEY=<your_openai_or_openapi_token>
+
+# apply to running container
+docker compose up -d samatha-ai
+```
+
 Endpoints:
 
 - `GET /health`

@@ -9,6 +9,8 @@ services:
       - samatha_data:/app/backend/data
     environment:
       WEBUI_AUTH: "False"
+      OPENAI_API_BASE_URL: ${SAMATHA_OPENAI_API_BASE_URL:-https://api.openai.com/v1}
+      OPENAI_API_KEY: ${SAMATHA_OPENAI_API_KEY:-}
 
   jarvis-ui:
     image: nginx:alpine
