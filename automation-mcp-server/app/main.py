@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+import traceback
 
 import jwt
 from fastapi import Depends, FastAPI, HTTPException, Request, status
@@ -56,42 +57,46 @@ def _make_auth_dependency(cfg: AppConfig):
 
 
 def create_app() -> FastAPI:
-    configure_logging()
-    logger = get_logger("automation-mcp-server")
+    try:
+        configure_logging()
+        logger = get_logger("automation-mcp-server")
 
-    cfg = load_config()
-    auth_dependency = _make_auth_dependency(cfg)
+        cfg = load_config()
+        auth_dependency = _make_auth_dependency(cfg)
 
-    app = FastAPI(title="automation-mcp-server", version="1.0.0")
+        app = FastAPI(title="automation-mcp-server", version="1.0.0")
 
-    homey_provider = HomeyProvider(cfg.homey) if cfg.homey and cfg.homey.enabled else None
-    ha_provider = HomeAssistantProvider(cfg.homeassistant.instances)
+        homey_provider = HomeyProvider(cfg.homey) if cfg.homey and cfg.homey.enabled else None
+        ha_provider = HomeAssistantProvider(cfg.homeassistant.instances)
 
-    mcp = FastMCP("automation-mcp-server")
-    register_homey_tools(mcp, homey_provider, logger)
-    register_ha_tools(mcp, ha_provider, logger)
+        mcp = FastMCP("automation-mcp-server")
+        register_homey_tools(mcp, homey_provider, logger)
+        register_ha_tools(mcp, ha_provider, logger)
 
-    @app.get("/health", response_model=HealthResponse)
-    async def health() -> HealthResponse:
-        return HealthResponse(service="automation-mcp-server", status="ok")
+        @app.get("/health", response_model=HealthResponse)
+        async def health() -> HealthResponse:
+            return HealthResponse(service="automation-mcp-server", status="ok")
 
-    @app.get("/meta")
-    async def meta(_: Any = Depends(auth_dependency)) -> dict[str, Any]:
-        return {
-            "service": "automation-mcp-server",
-            "homey_enabled": bool(homey_provider),
-            "homeassistant_instances": sorted(cfg.homeassistant.instances.keys()),
-            "jwt_enabled": cfg.jwt.enabled,
-        }
+        @app.get("/meta")
+        async def meta(_: Any = Depends(auth_dependency)) -> dict[str, Any]:
+            return {
+                "service": "automation-mcp-server",
+                "homey_enabled": bool(homey_provider),
+                "homeassistant_instances": sorted(cfg.homeassistant.instances.keys()),
+                "jwt_enabled": cfg.jwt.enabled,
+            }
 
-    app.mount("/mcp", _build_mcp_asgi_app(mcp))
+        app.mount("/mcp", _build_mcp_asgi_app(mcp))
 
-    logger.info(
-        "server_started",
-        service="automation-mcp-server",
-        homey_enabled=bool(homey_provider),
-        ha_instances=sorted(cfg.homeassistant.instances.keys()),
-        jwt_enabled=cfg.jwt.enabled,
-    )
+        logger.info(
+            "server_started",
+            service="automation-mcp-server",
+            homey_enabled=bool(homey_provider),
+            ha_instances=sorted(cfg.homeassistant.instances.keys()),
+            jwt_enabled=cfg.jwt.enabled,
+        )
 
-    return app
+        return app
+    except Exception:
+        traceback.print_exc()
+        raise
