@@ -130,14 +130,28 @@ function hideCameraSources() {
   }
 }
 
-function getStreamUrl() {
+function getStreamUrls() {
   const url = new URL(window.location.href);
   const fromQuery = url.searchParams.get("cameraStream");
   if (fromQuery) {
-    return fromQuery;
+    return [fromQuery];
   }
 
-  return DEFAULT_CAMERA_STREAM_URL;
+  const candidates = [];
+  const protocol = window.location.protocol === "https:" ? "https:" : "http:";
+  const hostName = window.location.hostname;
+
+  if (hostName) {
+    candidates.push(`${protocol}//${hostName}:8081/stream.mjpg`);
+  }
+
+  if (hostName && hostName !== "localhost" && hostName !== "127.0.0.1") {
+    candidates.push(DEFAULT_CAMERA_STREAM_URL);
+  }
+
+  candidates.push("http://127.0.0.1:8081/stream.mjpg");
+
+  return Array.from(new Set(candidates));
 }
 
 function waitForImageLoad(img, timeoutMs) {
@@ -173,21 +187,30 @@ async function tryNetworkStream() {
     return false;
   }
 
-  const streamUrl = getStreamUrl();
-  cameraStreamEl.src = streamUrl;
+  const streamUrls = getStreamUrls();
 
-  try {
-    await waitForImageLoad(cameraStreamEl, 3500);
-    hideCameraSources();
-    cameraStreamEl.classList.add("live");
-    cameraFallbackEl.classList.add("camera-hidden");
-    setCameraState("LIVE STREAM (8081)");
-    return true;
-  } catch {
+  for (const streamUrl of streamUrls) {
+    cameraStreamEl.src = streamUrl;
+
+    try {
+      await waitForImageLoad(cameraStreamEl, 3500);
+      hideCameraSources();
+      cameraStreamEl.classList.add("live");
+      cameraFallbackEl.classList.add("camera-hidden");
+      setCameraState("LIVE STREAM (8081)");
+      return true;
+    } catch {
+      cameraStreamEl.classList.remove("live");
+      cameraStreamEl.removeAttribute("src");
+    }
+  }
+
+  if (cameraStreamEl) {
     cameraStreamEl.classList.remove("live");
     cameraStreamEl.removeAttribute("src");
-    return false;
   }
+
+  return false;
 }
 
 async function initCamera() {
