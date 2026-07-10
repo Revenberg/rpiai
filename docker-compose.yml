@@ -38,10 +38,16 @@ services:
       OLLAMA_BASE_URL: ${SAMATHA_OLLAMA_BASE_URL:-http://ollama:11434}
       OPENAI_API_BASE_URL: ${SAMATHA_CONTAINER_API_BASE_URL:-http://ollama:11434/v1}
       OPENAI_API_KEY: ${SAMATHA_CONTAINER_API_KEY:-ollama}
-      OPENAI_API_BASE_URLS: ${SAMATHA_CONTAINER_API_BASE_URL:-http://ollama:11434/v1};${SAMATHA_OPENAI_API_BASE_URL:-https://api.openai.com/v1}
-      OPENAI_API_KEYS: ${SAMATHA_CONTAINER_API_KEY:-ollama};${SAMATHA_OPENAI_API_KEY:-}
+      OPENAI_API_BASE_URLS: ${SAMATHA_OPENAI_API_BASE_URLS:-http://ollama:11434/v1}
+      OPENAI_API_KEYS: ${SAMATHA_OPENAI_API_KEYS:-ollama}
       DEFAULT_MODELS: ${SAMATHA_DEFAULT_MODEL:-tinyllama}
       SAMATHA_MCP_SERVER_URL: ${SAMATHA_MCP_SERVER_URL:-http://automation-mcp-server:8080/mcp}
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail http://127.0.0.1:8080/_app/version.json > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
 
   jarvis-ui:
     image: nginx:alpine
