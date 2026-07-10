@@ -11,6 +11,9 @@ services:
       WEBUI_AUTH: "False"
       OPENAI_API_BASE_URL: ${SAMATHA_OPENAI_API_BASE_URL:-https://api.openai.com/v1}
       OPENAI_API_KEY: ${SAMATHA_OPENAI_API_KEY:-}
+      OPENAI_API_BASE_URLS: ${SAMATHA_OPENAI_API_BASE_URL:-https://api.openai.com/v1}
+      OPENAI_API_KEYS: ${SAMATHA_OPENAI_API_KEY:-}
+      DEFAULT_MODELS: ${SAMATHA_DEFAULT_MODEL:-gpt-4o-mini}
       SAMATHA_MCP_SERVER_URL: ${SAMATHA_MCP_SERVER_URL:-http://automation-mcp-server:8080/mcp}
 
   jarvis-ui:

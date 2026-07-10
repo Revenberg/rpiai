@@ -1,18 +1,18 @@
 homey:
   enabled: true
   base_url: http://homey
-  bearer_token: REPLACE_HOMEY_TOKEN
+  bearer_token: 50781a26-a351-48db-9eae-51b888750435:67d1614d-b653-4dac-b557-738e693e9675:1f1c68afda0206445bb880de382c87990f9cef91
   timeout_seconds: 15
 
 homeassistant:
   instances:
     energie:
       url: http://192.168.1.123:8123
-      token: REPLACE_HOME_ASSISTANT_ENERGIE_TOKEN
+      token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJlYWY4YjgxYjUxNDI0OGUwOGViNzlmYmFmMzhjZjRiNSIsImlhdCI6MTc4MzYyMzM5MywiZXhwIjoyMDk4OTgzMzkzfQ.CTd98heUBiDXujMvvW1TbngVOL2FQsQf96G-1yGPjr8
       timeout_seconds: 15
     aanwezigheid:
       url: http://192.168.1.80:8123
-      token: REPLACE_HOME_ASSISTANT_AANWEZIGHEID_TOKEN
+      token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI3YjlhMDk2MzJjNjE0NzcyYjVhOTBiZWJkZjQ4ZGMwMyIsImlhdCI6MTc4MzYyMzQ4NSwiZXhwIjoyMDk4OTgzNDg1fQ.oxOG8l8260udgcQLNOs_klJ6caoB4bjKUKyqwRRFjF8
       timeout_seconds: 15
 
 jwt:
