@@ -65,6 +65,56 @@ docker compose pull
 echo "==> Up services"
 docker compose up -d --build
 
+echo "==> Enforce persisted Open WebUI Ollama connection"
+docker compose exec -T samatha-ai python - <<'PY' || true
+import os
+import sqlite3
+
+db_path = "/app/backend/data/webui.db"
+if not os.path.exists(db_path):
+  print("webui.db not found, skipping persisted connection fix")
+  raise SystemExit(0)
+
+replacements = [
+  ("http://host.docker.internal:11434", "http://ollama:11434"),
+  ("host.docker.internal:11434", "ollama:11434"),
+]
+
+conn = sqlite3.connect(db_path)
+cur = conn.cursor()
+cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+tables = [row[0] for row in cur.fetchall()]
+updated = 0
+
+for table in tables:
+  table_q = table.replace('"', '""')
+  cur.execute(f'PRAGMA table_info("{table_q}")')
+  columns = cur.fetchall()
+  for col in columns:
+    col_name = col[1]
+    col_type = (col[2] or "").upper()
+    if col_type not in ("", "TEXT", "VARCHAR", "CHAR", "CLOB"):
+      continue
+
+    col_q = col_name.replace('"', '""')
+    for source, target in replacements:
+      sql = (
+        f'UPDATE "{table_q}" '
+        f'SET "{col_q}" = REPLACE("{col_q}", ?, ?) '
+        f'WHERE "{col_q}" LIKE ?'
+      )
+      cur.execute(sql, (source, target, f"%{source}%"))
+      if cur.rowcount and cur.rowcount > 0:
+        updated += cur.rowcount
+
+conn.commit()
+conn.close()
+print(f"Persisted connection fix updated {updated} row(s)")
+PY
+
+echo "==> Recreate Samatha after persisted fix"
+docker compose up -d --force-recreate samatha-ai
+
 echo "==> Ensure Ollama model is available (tinyllama)"
 for i in $(seq 1 30); do
   if docker compose exec -T ollama ollama list >/dev/null 2>&1; then
