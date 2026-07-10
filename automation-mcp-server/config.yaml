@@ -15,6 +15,11 @@ homeassistant:
       token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI3YjlhMDk2MzJjNjE0NzcyYjVhOTBiZWJkZjQ4ZGMwMyIsImlhdCI6MTc4MzYyMzQ4NSwiZXhwIjoyMDk4OTgzNDg1fQ.oxOG8l8260udgcQLNOs_klJ6caoB4bjKUKyqwRRFjF8
       timeout_seconds: 15
 
+monitor:
+  enabled: true
+  base_url: http://rpi-monitor:61208/api/4
+  timeout_seconds: 5
+
 jwt:
   enabled: false
   secret_key: CHANGE_ME

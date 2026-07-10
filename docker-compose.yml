@@ -1,4 +1,18 @@
 services:
+  rpi-monitor:
+    image: nicolargo/glances:latest
+    container_name: rpi-monitor
+    restart: unless-stopped
+    ports:
+      - "61208:61208"
+    pid: host
+    environment:
+      GLANCES_OPT: "-w"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    cpus: "0.20"
+    mem_limit: 128m
+
   ollama:
     image: ollama/ollama:latest
     container_name: ollama

@@ -38,9 +38,16 @@ class ServerConfig(BaseModel):
     port: int = 8080
 
 
+class MonitorConfig(BaseModel):
+    enabled: bool = True
+    base_url: HttpUrl = "http://rpi-monitor:61208/api/4"
+    timeout_seconds: float = 5.0
+
+
 class AppConfig(BaseModel):
     homey: HomeyConfig | None = None
     homeassistant: HomeAssistantConfig = Field(default_factory=HomeAssistantConfig)
+    monitor: MonitorConfig = Field(default_factory=MonitorConfig)
     jwt: JwtConfig = Field(default_factory=JwtConfig)
     server: ServerConfig = Field(default_factory=ServerConfig)
 

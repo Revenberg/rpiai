@@ -186,6 +186,11 @@ pytest -q
 - ha.labels(instance)
 - ha.services(instance)
 
+### Monitor (Raspberry Pi)
+
+- monitor.host()
+- monitor.containers()
+
 ## Example MCP tool calls
 
 Example: turn on a light in HA home instance.

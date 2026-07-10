@@ -124,6 +124,12 @@ Check logs:
 docker compose logs --tail=100 samatha-ai
 ```
 
+Lightweight monitoring (host + containers):
+
+```text
+http://rpiai.local:61208
+```
+
 Open browser:
 
 ```text
@@ -212,6 +218,11 @@ Endpoints:
 - `GET /api/actions?limit=50`
 - `POST /api/actions`
 - `POST /api/actions/execute`
+
+Monitoring endpoints (Glances API):
+
+- `GET http://<host>:61208/api/4/quicklook`
+- `GET http://<host>:61208/api/4/docker`
 
 UI integration:
 
