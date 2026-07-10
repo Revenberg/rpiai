@@ -7,20 +7,13 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:11434/api/tags"]
-      interval: 30s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
 
   samatha-ai:
     image: ghcr.io/open-webui/open-webui:main
     container_name: samatha-ai
     restart: unless-stopped
     depends_on:
-      ollama:
-        condition: service_healthy
+      - ollama
     ports:
       - "3000:8080"
     volumes:
