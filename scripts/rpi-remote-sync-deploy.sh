@@ -78,6 +78,9 @@ if not os.path.exists(db_path):
 replacements = [
   ("http://host.docker.internal:11434", "http://ollama:11434"),
   ("host.docker.internal:11434", "ollama:11434"),
+  ('"function_calling":"native"', '"function_calling":"none"'),
+  ('"function_calling":"legacy"', '"function_calling":"none"'),
+  ('"function_calling":"default"', '"function_calling":"none"'),
 ]
 
 conn = sqlite3.connect(db_path)
@@ -106,6 +109,18 @@ for table in tables:
       cur.execute(sql, (source, target, f"%{source}%"))
       if cur.rowcount and cur.rowcount > 0:
         updated += cur.rowcount
+
+conn.commit()
+
+# If custom tools exist, tinyllama can fail on tool-enabled payloads.
+# Keep the chat path stable by clearing tool registrations from DB.
+try:
+  cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='tools'")
+  if cur.fetchone() is not None:
+    cur.execute("DELETE FROM tools")
+    print(f"Cleared tools table entries: {cur.rowcount}")
+except Exception as exc:
+  print(f"Could not clear tools table: {exc}")
 
 conn.commit()
 conn.close()
