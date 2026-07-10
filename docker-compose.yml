@@ -33,7 +33,7 @@ services:
     volumes:
       - samatha_data:/app/backend/data
     environment:
-      WEBUI_AUTH: "False"
+      WEBUI_AUTH: "false"
       ENABLE_OLLAMA_API: "True"
       OLLAMA_BASE_URL: ${SAMATHA_OLLAMA_BASE_URL:-http://ollama:11434}
       OPENAI_API_BASE_URL: ${SAMATHA_CONTAINER_API_BASE_URL:-http://ollama:11434/v1}
