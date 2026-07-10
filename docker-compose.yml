@@ -1,19 +1,39 @@
 services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:11434/api/tags"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
   samatha-ai:
     image: ghcr.io/open-webui/open-webui:main
     container_name: samatha-ai
     restart: unless-stopped
+    depends_on:
+      ollama:
+        condition: service_healthy
     ports:
       - "3000:8080"
     volumes:
       - samatha_data:/app/backend/data
     environment:
       WEBUI_AUTH: "False"
-      OPENAI_API_BASE_URL: ${SAMATHA_OPENAI_API_BASE_URL:-https://api.openai.com/v1}
-      OPENAI_API_KEY: ${SAMATHA_OPENAI_API_KEY:-}
-      OPENAI_API_BASE_URLS: ${SAMATHA_OPENAI_API_BASE_URL:-https://api.openai.com/v1}
-      OPENAI_API_KEYS: ${SAMATHA_OPENAI_API_KEY:-}
-      DEFAULT_MODELS: ${SAMATHA_DEFAULT_MODEL:-gpt-4o-mini}
+      ENABLE_OLLAMA_API: "True"
+      OLLAMA_BASE_URL: ${SAMATHA_OLLAMA_BASE_URL:-http://ollama:11434}
+      OPENAI_API_BASE_URL: ${SAMATHA_CONTAINER_API_BASE_URL:-http://ollama:11434/v1}
+      OPENAI_API_KEY: ${SAMATHA_CONTAINER_API_KEY:-ollama}
+      OPENAI_API_BASE_URLS: ${SAMATHA_CONTAINER_API_BASE_URL:-http://ollama:11434/v1};${SAMATHA_OPENAI_API_BASE_URL:-https://api.openai.com/v1}
+      OPENAI_API_KEYS: ${SAMATHA_CONTAINER_API_KEY:-ollama};${SAMATHA_OPENAI_API_KEY:-}
+      DEFAULT_MODELS: ${SAMATHA_DEFAULT_MODEL:-tinyllama}
       SAMATHA_MCP_SERVER_URL: ${SAMATHA_MCP_SERVER_URL:-http://automation-mcp-server:8080/mcp}
 
   jarvis-ui:
@@ -57,5 +77,6 @@ services:
       SAMATHA_API_KEY: ${SAMATHA_API_KEY:-}
 
 volumes:
+  ollama_data:
   samatha_data:
   action_data:

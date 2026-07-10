@@ -223,12 +223,28 @@ UI integration:
 Run all operations on the Raspberry Pi host from the repository root.
 Containers stay on host (Docker Compose); automation stays in scripts.
 
+Single command from local Git Bash (sync from git + enforce Samatha container-first config + deploy):
+
+```bash
+./scripts/rpi-sync-deploy-samatha.sh pi rpiai.local main ~/rpiai 120
+```
+
+Useful modes:
+
+```bash
+# Check local + RPi git state only (no deploy)
+./scripts/rpi-sync-deploy-samatha.sh --status-only
+
+# Force RPi to match git exactly, then deploy
+./scripts/rpi-sync-deploy-samatha.sh --force-sync
+```
+
 ```bash
 # 1) OS update + Docker install
 ./scripts/rpi-2a-update-upgrade-docker.sh pi
 
-# 2) Deploy Samatha container on host
-./scripts/rpi-4-deploy-samatha.sh
+# 2) Or deploy/update directly from local Git Bash in one command
+./scripts/rpi-sync-deploy-samatha.sh
 
 # 3) Verify container + API
 ./scripts/rpi-verify-samatha.sh
