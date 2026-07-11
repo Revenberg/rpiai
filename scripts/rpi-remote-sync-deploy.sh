@@ -51,6 +51,12 @@ else
   printf 'SAMATHA_BASE_URL=http://samatha-ai:8080\n' >> .env
 fi
 
+if grep -q '^SAMATHA_MCP_SERVER_URL=' .env; then
+  sed -i 's|^SAMATHA_MCP_SERVER_URL=.*|SAMATHA_MCP_SERVER_URL=|' .env
+else
+  printf 'SAMATHA_MCP_SERVER_URL=\n' >> .env
+fi
+
 if grep -q '^SAMATHA_ENABLE_CODE_INTERPRETER=' .env; then
   sed -i 's|^SAMATHA_ENABLE_CODE_INTERPRETER=.*|SAMATHA_ENABLE_CODE_INTERPRETER=False|' .env
 else
