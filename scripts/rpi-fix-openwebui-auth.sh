@@ -27,6 +27,13 @@ for table in ('user', 'users', 'auth'):
     print(f"columns({table}):", cols)
     table_q = f'"{table}"'
     try:
+        if 'role' in cols:
+            cur.execute(
+                f"UPDATE {table_q} SET role='admin' "
+                f"WHERE lower(coalesce(role,'')) IN ('pending','user','')"
+            )
+            print(f"updated {table}.role:", cur.rowcount)
+            updated += max(cur.rowcount, 0)
         if 'status' in cols:
             cur.execute(f"UPDATE {table_q} SET status='active' WHERE status IS NULL OR lower(status) != 'active'")
             print(f"updated {table}.status:", cur.rowcount)
