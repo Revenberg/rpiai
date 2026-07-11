@@ -51,6 +51,24 @@ else
   printf 'SAMATHA_BASE_URL=http://samatha-ai:8080\n' >> .env
 fi
 
+if grep -q '^SAMATHA_ENABLE_CODE_INTERPRETER=' .env; then
+  sed -i 's|^SAMATHA_ENABLE_CODE_INTERPRETER=.*|SAMATHA_ENABLE_CODE_INTERPRETER=False|' .env
+else
+  printf 'SAMATHA_ENABLE_CODE_INTERPRETER=False\n' >> .env
+fi
+
+if grep -q '^SAMATHA_ENABLE_CODE_EXECUTION=' .env; then
+  sed -i 's|^SAMATHA_ENABLE_CODE_EXECUTION=.*|SAMATHA_ENABLE_CODE_EXECUTION=False|' .env
+else
+  printf 'SAMATHA_ENABLE_CODE_EXECUTION=False\n' >> .env
+fi
+
+if grep -q '^SAMATHA_ENABLE_MEMORIES=' .env; then
+  sed -i 's|^SAMATHA_ENABLE_MEMORIES=.*|SAMATHA_ENABLE_MEMORIES=False|' .env
+else
+  printf 'SAMATHA_ENABLE_MEMORIES=False\n' >> .env
+fi
+
 if ! grep -q '^SAMATHA_OPENAI_API_BASE_URL=' .env; then
   printf 'SAMATHA_OPENAI_API_BASE_URL=https://api.openai.com/v1\n' >> .env
 fi
@@ -111,6 +129,10 @@ conn.commit()
 conn.close()
 print(f"Persisted connection fix updated {updated} row(s)")
 PY
+
+if [[ -f ./scripts/rpi-fix-openwebui-tools.sh ]]; then
+  bash ./scripts/rpi-fix-openwebui-tools.sh || true
+fi
 
 echo "==> Recreate Samatha after persisted fix"
 docker compose up -d --force-recreate samatha-ai
