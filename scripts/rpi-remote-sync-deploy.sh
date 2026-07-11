@@ -69,6 +69,12 @@ else
   printf 'SAMATHA_ENABLE_MEMORIES=False\n' >> .env
 fi
 
+if grep -q '^SAMATHA_TOOL_SERVER_CONNECTIONS=' .env; then
+  sed -i 's|^SAMATHA_TOOL_SERVER_CONNECTIONS=.*|SAMATHA_TOOL_SERVER_CONNECTIONS=[]|' .env
+else
+  printf 'SAMATHA_TOOL_SERVER_CONNECTIONS=[]\n' >> .env
+fi
+
 if ! grep -q '^SAMATHA_OPENAI_API_BASE_URL=' .env; then
   printf 'SAMATHA_OPENAI_API_BASE_URL=https://api.openai.com/v1\n' >> .env
 fi
