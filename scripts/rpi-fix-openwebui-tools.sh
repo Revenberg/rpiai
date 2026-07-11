@@ -115,10 +115,63 @@ def update_json_column(cur, table: str, pk_col: str, col: str):
     return updates
 
 
+def update_config_rows(cur):
+    updates = 0
+    if "config" not in tables:
+        return updates
+
+    cur.execute('PRAGMA table_info("config")')
+    config_cols = {c[1] for c in cur.fetchall()}
+    if "id" not in config_cols or "val" not in config_cols:
+        return updates
+
+    cur.execute('SELECT id, val FROM "config"')
+    rows = cur.fetchall()
+    for row_id, raw in rows:
+        key = (row_id or "").lower()
+        val = raw
+
+        if "tool" in key or "function" in key or "code_interpreter" in key or "code_execution" in key:
+            if isinstance(val, str):
+                stripped = val.strip().lower()
+                if stripped in {"true", "false", "default", "native", "legacy", "auto", "on", "off", "none"}:
+                    new_val = "false"
+                    if new_val != val:
+                        cur.execute('UPDATE "config" SET "val" = ? WHERE "id" = ?', (new_val, row_id))
+                        updates += 1
+                elif stripped in {"[]", "{}", ""}:
+                    pass
+                else:
+                    try:
+                        data = json.loads(val)
+                    except Exception:
+                        data = None
+
+                    if isinstance(data, (dict, list)):
+                        if walk(data):
+                            cur.execute(
+                                'UPDATE "config" SET "val" = ? WHERE "id" = ?',
+                                (json.dumps(data, ensure_ascii=False), row_id),
+                            )
+                            updates += 1
+
+    return updates
+
+
 conn = sqlite3.connect(DB_PATH)
 cur = conn.cursor()
 cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
 tables = {r[0] for r in cur.fetchall()}
+
+# Drop dynamic tool/function registry rows to prevent tool payload generation.
+for t in ("tool", "tools", "function", "functions"):
+    if t in tables:
+        try:
+            cur.execute(f'DELETE FROM "{t}"')
+            if cur.rowcount and cur.rowcount > 0:
+                print(f"cleared {t}: {cur.rowcount}")
+        except Exception:
+            pass
 
 # Candidate table/column combinations used by Open WebUI.
 candidates = [
@@ -144,6 +197,11 @@ for table, pk, col in candidates:
     if updated:
         print(f"updated {table}.{col}: {updated}")
         total += updated
+
+cfg_updated = update_config_rows(cur)
+if cfg_updated:
+    print(f"updated config rows: {cfg_updated}")
+    total += cfg_updated
 
 conn.commit()
 conn.close()
