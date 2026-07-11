@@ -24,14 +24,14 @@ docker compose pull
 echo "==> Start services"
 docker compose up -d
 
-echo "==> Ensure Ollama model is available (tinyllama)"
+echo "==> Ensure Ollama model is available (llama3.2:1b)"
 for i in $(seq 1 30); do
   if docker compose exec -T ollama ollama list >/dev/null 2>&1; then
     break
   fi
   sleep 2
 done
-docker compose exec -T ollama ollama pull "${SAMATHA_DEFAULT_MODEL:-tinyllama}"
+docker compose exec -T ollama ollama pull "${SAMATHA_DEFAULT_MODEL:-llama3.2:1b}"
 
 echo "==> Service status"
 docker compose ps
