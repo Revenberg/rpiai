@@ -23,20 +23,23 @@ for table in ('user', 'users'):
     if table not in tables:
         continue
     cols = columns(table)
-    sets = []
+    table_q = f'"{table}"'
     if 'status' in cols:
-        sets.append("status='active'")
+        cur.execute(f"UPDATE {table_q} SET status='active' WHERE status IS NULL OR lower(status) != 'active'")
+        print(f"updated {table}.status:", cur.rowcount)
+        updated += max(cur.rowcount, 0)
     if 'active' in cols:
-        sets.append('active=1')
+        cur.execute(f"UPDATE {table_q} SET active=1 WHERE active IS NULL OR active != 1")
+        print(f"updated {table}.active:", cur.rowcount)
+        updated += max(cur.rowcount, 0)
     if 'disabled' in cols:
-        sets.append('disabled=0')
+        cur.execute(f"UPDATE {table_q} SET disabled=0 WHERE disabled IS NULL OR disabled != 0")
+        print(f"updated {table}.disabled:", cur.rowcount)
+        updated += max(cur.rowcount, 0)
     if 'verified' in cols:
-        sets.append('verified=1')
-    if sets:
-        sql = f"UPDATE {table} SET " + ', '.join(sets)
-        cur.execute(sql)
-        print(f"updated {table}:", cur.rowcount)
-        updated += cur.rowcount
+        cur.execute(f"UPDATE {table_q} SET verified=1 WHERE verified IS NULL OR verified != 1")
+        print(f"updated {table}.verified:", cur.rowcount)
+        updated += max(cur.rowcount, 0)
 
 # Try to disable auth-like flags in config table if present.
 if 'config' in tables:
@@ -45,6 +48,8 @@ if 'config' in tables:
     if 'key' in cols and 'value' in cols:
         cur.execute("UPDATE config SET value='false' WHERE key IN ('WEBUI_AUTH','ENABLE_SIGNUP','auth','webui.auth')")
         print('updated config key/value rows:', cur.rowcount)
+        cur.execute("INSERT OR REPLACE INTO config(key, value, updated_at) VALUES('WEBUI_AUTH', 'false', strftime('%s','now'))")
+        print('upserted WEBUI_AUTH=false')
     elif 'name' in cols and 'value' in cols:
         cur.execute("UPDATE config SET value='false' WHERE name IN ('WEBUI_AUTH','ENABLE_SIGNUP','auth','webui.auth')")
         print('updated config name/value rows:', cur.rowcount)
