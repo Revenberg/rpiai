@@ -40,9 +40,9 @@ else
 fi
 
 if grep -q '^SAMATHA_DEFAULT_MODEL=' .env; then
-  sed -i 's|^SAMATHA_DEFAULT_MODEL=.*|SAMATHA_DEFAULT_MODEL=llama3.2:1b|' .env
+  sed -i 's|^SAMATHA_DEFAULT_MODEL=.*|SAMATHA_DEFAULT_MODEL=qwen2.5:0.5b|' .env
 else
-  printf 'SAMATHA_DEFAULT_MODEL=llama3.2:1b\n' >> .env
+  printf 'SAMATHA_DEFAULT_MODEL=qwen2.5:0.5b\n' >> .env
 fi
 
 if grep -q '^SAMATHA_BASE_URL=' .env; then
@@ -149,17 +149,17 @@ fi
 echo "==> Recreate Samatha after persisted fix"
 docker compose up -d --force-recreate samatha-ai
 
-echo "==> Ensure Ollama model is available (llama3.2:1b)"
+echo "==> Ensure Ollama model is available (qwen2.5:0.5b)"
 for i in $(seq 1 30); do
   if docker compose exec -T ollama ollama list >/dev/null 2>&1; then
     break
   fi
   sleep 2
 done
-docker compose exec -T ollama ollama pull "${SAMATHA_DEFAULT_MODEL:-llama3.2:1b}"
+docker compose exec -T ollama ollama pull "${SAMATHA_DEFAULT_MODEL:-qwen2.5:0.5b}"
 
 echo "==> Warm up Ollama model (first token latency)"
-docker compose exec -T ollama ollama run "${SAMATHA_DEFAULT_MODEL:-llama3.2:1b}" "Respond with exactly: KLAAR" >/dev/null || true
+docker compose exec -T ollama ollama run "${SAMATHA_DEFAULT_MODEL:-qwen2.5:0.5b}" "Respond with exactly: KLAAR" >/dev/null || true
 
 echo "==> Compose status"
 docker compose ps

@@ -46,7 +46,7 @@ services:
       OPENAI_API_KEY: ${SAMATHA_CONTAINER_API_KEY:-ollama}
       OPENAI_API_BASE_URLS: ${SAMATHA_OPENAI_API_BASE_URLS:-http://ollama:11434/v1}
       OPENAI_API_KEYS: ${SAMATHA_OPENAI_API_KEYS:-ollama}
-      DEFAULT_MODELS: ${SAMATHA_DEFAULT_MODEL:-llama3.2:1b}
+      DEFAULT_MODELS: ${SAMATHA_DEFAULT_MODEL:-qwen2.5:0.5b}
       SAMATHA_MCP_SERVER_URL: ${SAMATHA_MCP_SERVER_URL:-}
     healthcheck:
       test: ["CMD-SHELL", "curl --silent --fail http://127.0.0.1:8080/_app/version.json > /dev/null || exit 1"]
