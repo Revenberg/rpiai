@@ -158,6 +158,9 @@ for i in $(seq 1 30); do
 done
 docker compose exec -T ollama ollama pull "${SAMATHA_DEFAULT_MODEL:-llama3.2:1b}"
 
+echo "==> Warm up Ollama model (first token latency)"
+docker compose exec -T ollama ollama run "${SAMATHA_DEFAULT_MODEL:-llama3.2:1b}" "Respond with exactly: KLAAR" >/dev/null || true
+
 echo "==> Compose status"
 docker compose ps
 
