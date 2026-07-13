@@ -24,6 +24,9 @@ if [[ ! -f .env ]]; then
   exit 1
 fi
 
+# Normalize Windows line endings if present.
+sed -i 's/\r$//' .env
+
 set -a
 # shellcheck disable=SC1091
 source ./.env
