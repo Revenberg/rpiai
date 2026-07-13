@@ -5,7 +5,7 @@ set -euo pipefail
 # It connects to the Raspberry Pi, syncs repo from git, and runs remote deploy logic.
 #
 # Usage:
-#   ./scripts/rpi-sync-deploy-samatha.sh [--status-only] [--force-sync] [pi_user] [pi_host] [branch] [remote_repo_dir] [log_lines]
+#   ./scripts/rpi-sync-deploy-samatha.sh [--status-only] [--force-sync] [--no-reset] [pi_user] [pi_host] [branch] [remote_repo_dir] [log_lines]
 #
 # Examples:
 #   ./scripts/rpi-sync-deploy-samatha.sh
@@ -14,12 +14,17 @@ set -euo pipefail
 
 STATUS_ONLY=0
 FORCE_SYNC=0
+FULL_RESET=1
 if [[ "${1:-}" == "--status-only" ]]; then
   STATUS_ONLY=1
   shift
 fi
 if [[ "${1:-}" == "--force-sync" ]]; then
   FORCE_SYNC=1
+  shift
+fi
+if [[ "${1:-}" == "--no-reset" ]]; then
+  FULL_RESET=0
   shift
 fi
 
@@ -47,9 +52,9 @@ if [[ "$STATUS_ONLY" == "1" ]]; then
   REMOTE_CMD="set -euo pipefail; cd $REMOTE_REPO_DIR; git fetch origin; git checkout $BRANCH; git pull --ff-only origin $BRANCH; echo '==> Remote repo:' \$(pwd); echo '==> Branch:' \$(git rev-parse --abbrev-ref HEAD); echo '==> Commit:' \$(git rev-parse --short HEAD); echo '==> Remote status:'; git status --short || true"
 else
   if [[ "$FORCE_SYNC" == "1" ]]; then
-    REMOTE_CMD="set -euo pipefail; cd $REMOTE_REPO_DIR; git fetch origin; git checkout $BRANCH; git reset --hard origin/$BRANCH; git clean -fd; if [ -f ./scripts/rpi-remote-sync-deploy.sh ]; then bash ./scripts/rpi-remote-sync-deploy.sh $BRANCH $LOG_LINES $STATUS_ONLY; else echo 'Missing scripts/rpi-remote-sync-deploy.sh' >&2; exit 1; fi"
+    REMOTE_CMD="set -euo pipefail; cd $REMOTE_REPO_DIR; git fetch origin; git checkout $BRANCH; git reset --hard origin/$BRANCH; git clean -fd; if [ -f ./scripts/rpi-remote-sync-deploy.sh ]; then bash ./scripts/rpi-remote-sync-deploy.sh $BRANCH $LOG_LINES $STATUS_ONLY $FULL_RESET; else echo 'Missing scripts/rpi-remote-sync-deploy.sh' >&2; exit 1; fi"
   else
-    REMOTE_CMD="set -euo pipefail; cd $REMOTE_REPO_DIR; git fetch origin; git checkout $BRANCH; git pull --ff-only origin $BRANCH; if [ -f ./scripts/rpi-remote-sync-deploy.sh ]; then bash ./scripts/rpi-remote-sync-deploy.sh $BRANCH $LOG_LINES $STATUS_ONLY; else echo 'Missing scripts/rpi-remote-sync-deploy.sh' >&2; exit 1; fi"
+    REMOTE_CMD="set -euo pipefail; cd $REMOTE_REPO_DIR; git fetch origin; git checkout $BRANCH; git pull --ff-only origin $BRANCH; if [ -f ./scripts/rpi-remote-sync-deploy.sh ]; then bash ./scripts/rpi-remote-sync-deploy.sh $BRANCH $LOG_LINES $STATUS_ONLY $FULL_RESET; else echo 'Missing scripts/rpi-remote-sync-deploy.sh' >&2; exit 1; fi"
   fi
 fi
 

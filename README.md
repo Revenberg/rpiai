@@ -1,5 +1,7 @@
 # rpiai
 
+Current stack version: 2.0.0
+
 Goal of this repository is to build a Raspberry Pi based AI assistant hub that coordinates remote home automation devices, for example Homey and Home Assistant.
 
 ## Setup Guides
@@ -233,6 +235,54 @@ UI integration:
 
 Run all operations on the Raspberry Pi host from the repository root.
 Containers stay on host (Docker Compose); automation stays in scripts.
+
+## V2 Production Stack
+
+The repository now ships a hardened V2 Docker stack with:
+
+- Ollama (latest, persistent model storage, port 11434)
+- Open WebUI behind Caddy HTTPS (public port 3000 -> HTTPS)
+- Wyoming Whisper (STT)
+- Wyoming Piper with Dutch voice (TTS)
+- Automation MCP Server with YAML config for:
+	- Homey
+	- Home Assistant 1
+	- Home Assistant 2
+- Watchtower (automatic updates)
+- Auto-backup service
+- Stack ops service for:
+	- automatic model download
+	- Samantha model creation
+	- Open WebUI initialization
+	- dependency and runtime validation
+	- network snapshot generation
+
+Security and operations defaults:
+
+- restart policy unless-stopped
+- healthchecks for all containers
+- no-new-privileges where possible
+- dropped Linux capabilities where possible
+- read-only mounts for config/scripts where possible
+- secrets only through .env, no hardcoded passwords in compose/config
+
+## V2 Deployment
+
+1. Copy .env.example to .env and fill all sensitive values.
+2. Push to git.
+3. Deploy from local machine through connect-rpiai.sh wrapper.
+
+Commands:
+
+```bash
+git push origin main
+./scripts/rpi-sync-deploy-samatha.sh --force-sync pi 192.168.1.1 main /home/pi/rpiai 180
+```
+
+Options:
+
+- Add --no-reset if you do not want a full container wipe before redeploy.
+- Use --status-only to inspect local/remote git state without deployment.
 
 Single command from local Git Bash (sync from git + enforce Samatha container-first config + deploy):
 

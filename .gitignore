@@ -1,5 +1,8 @@
 # Local environment secrets
 .env
+automation-mcp-server/config.yaml
+backup/
+*.tgz
 
 # Common local artifacts
 *.log

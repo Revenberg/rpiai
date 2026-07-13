@@ -1,0 +1,13 @@
+{
+  admin off
+}
+
+{$CADDY_SITE_ADDRESS} {
+  encode zstd gzip
+  reverse_proxy samatha-ai:8080
+  tls internal
+}
+
+:80 {
+  redir https://{$CADDY_SITE_ADDRESS}{uri}
+}

@@ -1,18 +1,18 @@
 homey:
   enabled: true
   base_url: http://homey
-  bearer_token: YOUR_HOMEY_TOKEN
+  bearer_token: CHANGE_ME_HOMEY_BEARER_TOKEN
   timeout_seconds: 15
 
 homeassistant:
   instances:
-    energie:
-      url: http://192.168.1.123:8123
-      token: LONG_LIVED_TOKEN
-      timeout_seconds: 15
-    aanwezigheid:
+    home_assistant_1:
       url: http://192.168.1.80:8123
-      token: LONG_LIVED_TOKEN
+      token: CHANGE_ME_HA1_TOKEN
+      timeout_seconds: 15
+    home_assistant_2:
+      url: http://192.168.1.123:8123
+      token: CHANGE_ME_HA2_TOKEN
       timeout_seconds: 15
 
 monitor:

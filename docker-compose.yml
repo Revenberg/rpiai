@@ -10,92 +10,293 @@ services:
       GLANCES_OPT: "-w"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    cpus: "0.20"
-    mem_limit: 128m
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -T 5 -O - http://127.0.0.1:61208/api/4/quicklook >/dev/null"]
+      interval: 30s
+      timeout: 8s
+      retries: 8
+      start_period: 30s
 
   ollama:
-    image: ollama/ollama:latest
+    image: ${OLLAMA_IMAGE:-ollama/ollama:latest}
     container_name: ollama
     restart: unless-stopped
     ports:
-      - "11434:11434"
+      - "${OLLAMA_PORT:-11434}:11434"
     environment:
       OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-24h}
     volumes:
       - ollama_data:/root/.ollama
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1"]
+      interval: 30s
+      timeout: 10s
+      retries: 8
+      start_period: 40s
+
+  automation-mcp-server:
+    build:
+      context: ./automation-mcp-server
+    container_name: automation-mcp-server
+    restart: unless-stopped
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      CONFIG_PATH: /app/config.yaml
+    command: ["uvicorn", "app.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8080"]
+    volumes:
+      - ./automation-mcp-server/config.yaml:/app/config.yaml:ro
+    tmpfs:
+      - /tmp
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3)\"",
+        ]
+      interval: 30s
+      timeout: 8s
+      retries: 8
+      start_period: 20s
+
+  wyoming-whisper:
+    image: ${WYOMING_WHISPER_IMAGE:-rhasspy/wyoming-whisper:latest}
+    container_name: wyoming-whisper
+    restart: unless-stopped
+    command: ["--model", "${WYOMING_WHISPER_MODEL:-tiny-int8}", "--language", "${WYOMING_WHISPER_LANGUAGE:-nl}", "--uri", "tcp://0.0.0.0:10300"]
+    ports:
+      - "${WYOMING_WHISPER_PORT:-10300}:10300"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "ps aux | grep -q '[w]hisper'"]
+      interval: 30s
+      timeout: 8s
+      retries: 8
+      start_period: 20s
+
+  wyoming-piper:
+    image: ${WYOMING_PIPER_IMAGE:-rhasspy/wyoming-piper:latest}
+    container_name: wyoming-piper
+    restart: unless-stopped
+    command: ["--voice", "${WYOMING_PIPER_VOICE:-nl_NL-nathalie-medium}", "--uri", "tcp://0.0.0.0:10200"]
+    ports:
+      - "${WYOMING_PIPER_PORT:-10200}:10200"
+    volumes:
+      - piper_data:/data
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "ps aux | grep -q '[p]iper'"]
+      interval: 30s
+      timeout: 8s
+      retries: 8
+      start_period: 20s
 
   samatha-ai:
-    image: ghcr.io/open-webui/open-webui:main
+    image: ${OPEN_WEBUI_IMAGE:-ghcr.io/open-webui/open-webui:latest}
     container_name: samatha-ai
     restart: unless-stopped
     depends_on:
-      - ollama
-    ports:
-      - "3000:8080"
+      ollama:
+        condition: service_healthy
+      automation-mcp-server:
+        condition: service_healthy
+      wyoming-whisper:
+        condition: service_healthy
+      wyoming-piper:
+        condition: service_healthy
+    expose:
+      - "8080"
     volumes:
       - samatha_data:/app/backend/data
     environment:
-      WEBUI_AUTH: "false"
+      WEBUI_AUTH: ${OPEN_WEBUI_AUTH:-True}
       ENABLE_OLLAMA_API: "True"
-      TOOL_SERVER_CONNECTIONS: ${SAMATHA_TOOL_SERVER_CONNECTIONS:-[]}
-      ENABLE_CODE_INTERPRETER: ${SAMATHA_ENABLE_CODE_INTERPRETER:-False}
-      ENABLE_CODE_EXECUTION: ${SAMATHA_ENABLE_CODE_EXECUTION:-False}
-      ENABLE_MEMORIES: ${SAMATHA_ENABLE_MEMORIES:-False}
       OLLAMA_BASE_URL: ${SAMATHA_OLLAMA_BASE_URL:-http://ollama:11434}
       OPENAI_API_BASE_URL: ${SAMATHA_CONTAINER_API_BASE_URL:-http://ollama:11434/v1}
       OPENAI_API_KEY: ${SAMATHA_CONTAINER_API_KEY:-ollama}
       OPENAI_API_BASE_URLS: ${SAMATHA_OPENAI_API_BASE_URLS:-http://ollama:11434/v1}
       OPENAI_API_KEYS: ${SAMATHA_OPENAI_API_KEYS:-ollama}
       DEFAULT_MODELS: ${SAMATHA_DEFAULT_MODEL:-qwen2.5:0.5b}
-      SAMATHA_MCP_SERVER_URL: ${SAMATHA_MCP_SERVER_URL:-}
+      ENABLE_CODE_INTERPRETER: ${SAMATHA_ENABLE_CODE_INTERPRETER:-False}
+      ENABLE_CODE_EXECUTION: ${SAMATHA_ENABLE_CODE_EXECUTION:-False}
+      ENABLE_MEMORIES: ${SAMATHA_ENABLE_MEMORIES:-False}
+      TOOL_SERVER_CONNECTIONS: ${SAMATHA_TOOL_SERVER_CONNECTIONS:-[]}
+      SAMATHA_MCP_SERVER_URL: ${SAMATHA_MCP_SERVER_URL:-http://automation-mcp-server:8080/mcp}
+      AUDIO_TTS_PROVIDER: ${AUDIO_TTS_PROVIDER:-wyoming}
+      AUDIO_TTS_URL: ${AUDIO_TTS_URL:-tcp://wyoming-piper:10200}
+      AUDIO_STT_PROVIDER: ${AUDIO_STT_PROVIDER:-wyoming}
+      AUDIO_STT_URL: ${AUDIO_STT_URL:-tcp://wyoming-whisper:10300}
+      AUDIO_STT_LANGUAGE: ${AUDIO_STT_LANGUAGE:-nl}
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
     healthcheck:
-      test: ["CMD-SHELL", "curl --silent --fail http://127.0.0.1:8080/_app/version.json > /dev/null || exit 1"]
+      test: ["CMD-SHELL", "curl --silent --fail http://127.0.0.1:8080/_app/version.json > /dev/null"]
       interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 25s
+      timeout: 8s
+      retries: 8
+      start_period: 40s
 
-  jarvis-ui:
-    image: nginx:alpine
-    container_name: jarvis-ui
+  caddy:
+    image: ${CADDY_IMAGE:-caddy:2.10-alpine}
+    container_name: caddy
     restart: unless-stopped
+    depends_on:
+      samatha-ai:
+        condition: service_healthy
     ports:
-      - "3001:80"
-    volumes:
-      - ./jarvis-ui:/usr/share/nginx/html:ro
-
-  camera-relay:
-    image: alexxit/go2rtc:latest
-    container_name: camera-relay
-    restart: unless-stopped
-    ports:
-      - "8081:1984"
-    devices:
-      - /dev/video0:/dev/video0
-    volumes:
-      - ./camera/go2rtc.yaml:/config/go2rtc.yaml:ro
-
-  action-hub:
-    build:
-      context: ./action-hub
-    container_name: action-hub
-    restart: unless-stopped
-    ports:
-      - "3002:3002"
-    volumes:
-      - action_data:/data
+      - "${CADDY_HTTP_PORT:-80}:80"
+      - "${OPEN_WEBUI_PORT:-3000}:443"
     environment:
-      ACTION_DB_PATH: /data/actions.db
-      HA_PRESENCE_BASE_URL: http://192.168.1.80:8123
-      HA_ENERGY_BASE_URL: http://192.168.1.123:8123
-      SAMATHA_BASE_URL: ${SAMATHA_BASE_URL:-http://samatha-ai:8080}
-      HOMEY_BASE_URL: ${HOMEY_BASE_URL:-}
-      HA_PRESENCE_TOKEN: ${HA_PRESENCE_TOKEN:-}
-      HA_ENERGY_TOKEN: ${HA_ENERGY_TOKEN:-}
-      HOMEY_TOKEN: ${HOMEY_TOKEN:-}
-      SAMATHA_API_KEY: ${SAMATHA_API_KEY:-}
+      CADDY_SITE_ADDRESS: ${CADDY_SITE_ADDRESS:-localhost}
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "pidof caddy >/dev/null 2>&1"]
+      interval: 30s
+      timeout: 8s
+      retries: 8
+      start_period: 20s
+
+  watchtower:
+    image: ${WATCHTOWER_IMAGE:-containrrr/watchtower:1.7.1}
+    container_name: watchtower
+    restart: unless-stopped
+    command:
+      - --cleanup
+      - --label-enable
+      - --rolling-restart
+      - --schedule
+      - ${WATCHTOWER_SCHEDULE:-0 0 4 * * *}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "pidof watchtower >/dev/null 2>&1"]
+      interval: 60s
+      timeout: 8s
+      retries: 8
+      start_period: 30s
+
+  stack-ops:
+    image: ${STACK_OPS_IMAGE:-alpine:3.22}
+    container_name: stack-ops
+    restart: unless-stopped
+    depends_on:
+      ollama:
+        condition: service_healthy
+      samatha-ai:
+        condition: service_healthy
+      automation-mcp-server:
+        condition: service_healthy
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+      OPENWEBUI_BASE_URL: http://samatha-ai:8080
+      MCP_BASE_URL: http://automation-mcp-server:8080
+      DEFAULT_MODEL: ${SAMATHA_DEFAULT_MODEL:-qwen2.5:0.5b}
+      SAMANTHA_MODEL_NAME: ${SAMANTHA_MODEL_NAME:-samantha}
+      OPS_LOOP_SECONDS: ${OPS_LOOP_SECONDS:-300}
+      REQUIRE_HTTPS_CHECK: ${REQUIRE_HTTPS_CHECK:-false}
+      CADDY_PUBLIC_URL: ${CADDY_PUBLIC_URL:-https://localhost:3000}
+    entrypoint: ["/bin/sh", "/opt/stack-ops.sh"]
+    volumes:
+      - ./scripts/container/stack-ops.sh:/opt/stack-ops.sh:ro
+      - ./models/Modelfile.samantha:/opt/Modelfile.samantha:ro
+      - stack_ops_state:/state
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /state/last_success && find /state/last_success -mmin -20 | grep -q last_success"]
+      interval: 60s
+      timeout: 8s
+      retries: 5
+      start_period: 120s
+
+  auto-backup:
+    image: ${BACKUP_IMAGE:-alpine:3.22}
+    container_name: auto-backup
+    restart: unless-stopped
+    environment:
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-21600}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+    entrypoint: ["/bin/sh", "/opt/backup-loop.sh"]
+    volumes:
+      - ./scripts/container/backup-loop.sh:/opt/backup-loop.sh:ro
+      - samatha_data:/src/samatha:ro
+      - ollama_data:/src/ollama:ro
+      - ./automation-mcp-server:/src/mcp:ro
+      - backup_data:/backup
+      - backup_state:/state
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /state/last_backup && find /state/last_backup -mmin -400 | grep -q last_backup"]
+      interval: 60s
+      timeout: 8s
+      retries: 5
+      start_period: 120s
 
 volumes:
   ollama_data:
   samatha_data:
-  action_data:
+  piper_data:
+  caddy_data:
+  caddy_config:
+  stack_ops_state:
+  backup_data:
+  backup_state:

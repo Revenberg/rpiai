@@ -2,11 +2,12 @@
 set -euo pipefail
 
 # This script runs on the Raspberry Pi inside the rpiai repository.
-# Args: [branch] [log_lines] [status_only]
+# Args: [branch] [log_lines] [status_only] [full_reset]
 
 BRANCH="${1:-main}"
 LOG_LINES="${2:-120}"
 STATUS_ONLY="${3:-0}"
+FULL_RESET="${4:-1}"
 
 echo "==> Remote repo: $(pwd)"
 echo "==> Branch: $(git rev-parse --abbrev-ref HEAD)"
@@ -18,151 +19,112 @@ if [[ "$STATUS_ONLY" == "1" ]]; then
   exit 0
 fi
 
-# Enforce Samatha config: local container first, OpenAI fallback.
-touch .env
-
-if grep -q '^SAMATHA_CONTAINER_API_BASE_URL=' .env; then
-  sed -i 's|^SAMATHA_CONTAINER_API_BASE_URL=.*|SAMATHA_CONTAINER_API_BASE_URL=http://ollama:11434/v1|' .env
-else
-  printf '\nSAMATHA_CONTAINER_API_BASE_URL=http://ollama:11434/v1\n' >> .env
+if [[ ! -f .env ]]; then
+  echo "Missing .env in repo root" >&2
+  exit 1
 fi
 
-if grep -q '^SAMATHA_OLLAMA_BASE_URL=' .env; then
-  sed -i 's|^SAMATHA_OLLAMA_BASE_URL=.*|SAMATHA_OLLAMA_BASE_URL=http://ollama:11434|' .env
-else
-  printf 'SAMATHA_OLLAMA_BASE_URL=http://ollama:11434\n' >> .env
-fi
+set -a
+# shellcheck disable=SC1091
+source ./.env
+set +a
 
-if grep -q '^SAMATHA_CONTAINER_API_KEY=' .env; then
-  sed -i 's|^SAMATHA_CONTAINER_API_KEY=.*|SAMATHA_CONTAINER_API_KEY=ollama|' .env
-else
-  printf 'SAMATHA_CONTAINER_API_KEY=ollama\n' >> .env
-fi
+required=(
+  SAMATHA_DEFAULT_MODEL
+  MCP_HOMEY_BASE_URL
+  MCP_HOMEY_BEARER_TOKEN
+  MCP_HA1_NAME
+  MCP_HA1_URL
+  MCP_HA1_TOKEN
+  MCP_HA2_NAME
+  MCP_HA2_URL
+  MCP_HA2_TOKEN
+)
 
-if grep -q '^SAMATHA_DEFAULT_MODEL=' .env; then
-  sed -i 's|^SAMATHA_DEFAULT_MODEL=.*|SAMATHA_DEFAULT_MODEL=qwen2.5:0.5b|' .env
-else
-  printf 'SAMATHA_DEFAULT_MODEL=qwen2.5:0.5b\n' >> .env
-fi
+for key in "${required[@]}"; do
+  if [[ -z "${!key:-}" ]]; then
+    echo "Missing required .env key: $key" >&2
+    exit 1
+  fi
+done
 
-if grep -q '^SAMATHA_BASE_URL=' .env; then
-  sed -i 's|^SAMATHA_BASE_URL=.*|SAMATHA_BASE_URL=http://samatha-ai:8080|' .env
-else
-  printf 'SAMATHA_BASE_URL=http://samatha-ai:8080\n' >> .env
-fi
+echo "==> Generate automation MCP config from .env"
+cat > automation-mcp-server/config.yaml <<YAML
+homey:
+  enabled: ${MCP_HOMEY_ENABLED:-true}
+  base_url: ${MCP_HOMEY_BASE_URL}
+  bearer_token: ${MCP_HOMEY_BEARER_TOKEN}
+  timeout_seconds: 15
 
-if grep -q '^SAMATHA_MCP_SERVER_URL=' .env; then
-  sed -i 's|^SAMATHA_MCP_SERVER_URL=.*|SAMATHA_MCP_SERVER_URL=|' .env
-else
-  printf 'SAMATHA_MCP_SERVER_URL=\n' >> .env
-fi
+homeassistant:
+  instances:
+    ${MCP_HA1_NAME}:
+      url: ${MCP_HA1_URL}
+      token: ${MCP_HA1_TOKEN}
+      timeout_seconds: 15
+    ${MCP_HA2_NAME}:
+      url: ${MCP_HA2_URL}
+      token: ${MCP_HA2_TOKEN}
+      timeout_seconds: 15
 
-if grep -q '^SAMATHA_ENABLE_CODE_INTERPRETER=' .env; then
-  sed -i 's|^SAMATHA_ENABLE_CODE_INTERPRETER=.*|SAMATHA_ENABLE_CODE_INTERPRETER=False|' .env
-else
-  printf 'SAMATHA_ENABLE_CODE_INTERPRETER=False\n' >> .env
-fi
+monitor:
+  enabled: ${MCP_MONITOR_ENABLED:-true}
+  base_url: ${MCP_MONITOR_BASE_URL:-http://rpi-monitor:61208/api/4}
+  timeout_seconds: 5
 
-if grep -q '^SAMATHA_ENABLE_CODE_EXECUTION=' .env; then
-  sed -i 's|^SAMATHA_ENABLE_CODE_EXECUTION=.*|SAMATHA_ENABLE_CODE_EXECUTION=False|' .env
-else
-  printf 'SAMATHA_ENABLE_CODE_EXECUTION=False\n' >> .env
-fi
+jwt:
+  enabled: ${MCP_JWT_ENABLED:-false}
+  secret_key: ${MCP_JWT_SECRET_KEY:-CHANGE_ME_JWT_SECRET}
+  algorithm: ${MCP_JWT_ALGORITHM:-HS256}
+  audience: null
+  issuer: null
 
-if grep -q '^SAMATHA_ENABLE_MEMORIES=' .env; then
-  sed -i 's|^SAMATHA_ENABLE_MEMORIES=.*|SAMATHA_ENABLE_MEMORIES=False|' .env
-else
-  printf 'SAMATHA_ENABLE_MEMORIES=False\n' >> .env
-fi
+server:
+  host: 0.0.0.0
+  port: 8080
+YAML
 
-if grep -q '^SAMATHA_TOOL_SERVER_CONNECTIONS=' .env; then
-  sed -i 's|^SAMATHA_TOOL_SERVER_CONNECTIONS=.*|SAMATHA_TOOL_SERVER_CONNECTIONS=[]|' .env
-else
-  printf 'SAMATHA_TOOL_SERVER_CONNECTIONS=[]\n' >> .env
-fi
+echo "==> Validate compose"
+docker compose config >/dev/null
 
-if ! grep -q '^SAMATHA_OPENAI_API_BASE_URL=' .env; then
-  printf 'SAMATHA_OPENAI_API_BASE_URL=https://api.openai.com/v1\n' >> .env
-fi
+echo "==> Stop current stack"
+docker compose down --remove-orphans || true
 
-if ! grep -q '^SAMATHA_OPENAI_API_KEY=' .env; then
-  printf 'SAMATHA_OPENAI_API_KEY=\n' >> .env
+if [[ "$FULL_RESET" == "1" ]]; then
+  echo "==> Full Docker container reset"
+  docker ps -aq | xargs -r docker rm -f
 fi
 
 echo "==> Pull images"
 docker compose pull
 
-echo "==> Up services"
+echo "==> Start stack"
 docker compose up -d --build
 
-echo "==> Enforce persisted Open WebUI Ollama connection"
-docker compose exec -T samatha-ai python - <<'PY' || true
-import os
-import sqlite3
-
-db_path = "/app/backend/data/webui.db"
-if not os.path.exists(db_path):
-  print("webui.db not found, skipping persisted connection fix")
-  raise SystemExit(0)
-
-replacements = [
-  ("http://host.docker.internal:11434", "http://ollama:11434"),
-  ("host.docker.internal:11434", "ollama:11434"),
-]
-
-conn = sqlite3.connect(db_path)
-cur = conn.cursor()
-cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
-tables = [row[0] for row in cur.fetchall()]
-updated = 0
-
-for table in tables:
-  table_q = table.replace('"', '""')
-  cur.execute(f'PRAGMA table_info("{table_q}")')
-  columns = cur.fetchall()
-  for col in columns:
-    col_name = col[1]
-    col_type = (col[2] or "").upper()
-    if col_type not in ("", "TEXT", "VARCHAR", "CHAR", "CLOB"):
-      continue
-
-    col_q = col_name.replace('"', '""')
-    for source, target in replacements:
-      sql = (
-        f'UPDATE "{table_q}" '
-        f'SET "{col_q}" = REPLACE("{col_q}", ?, ?) '
-        f'WHERE "{col_q}" LIKE ?'
-      )
-      cur.execute(sql, (source, target, f"%{source}%"))
-      if cur.rowcount and cur.rowcount > 0:
-        updated += cur.rowcount
-
-conn.commit()
-conn.close()
-print(f"Persisted connection fix updated {updated} row(s)")
-PY
-
-if [[ -f ./scripts/rpi-fix-openwebui-tools.sh ]]; then
-  bash ./scripts/rpi-fix-openwebui-tools.sh || true
-fi
-
-echo "==> Recreate Samatha after persisted fix"
-docker compose up -d --force-recreate samatha-ai
-
-echo "==> Ensure Ollama model is available (qwen2.5:0.5b)"
-for i in $(seq 1 30); do
-  if docker compose exec -T ollama ollama list >/dev/null 2>&1; then
+echo "==> Wait for health"
+deadline=$((SECONDS + 360))
+while [[ $SECONDS -lt $deadline ]]; do
+  unhealthy="$(docker compose ps --format json | python3 -c 'import json,sys; data=[json.loads(l) for l in sys.stdin if l.strip()]; bad=[d for d in data if d.get("Health") not in ("healthy", "")]; print(len(bad))')"
+  if [[ "$unhealthy" == "0" ]]; then
     break
   fi
-  sleep 2
+  sleep 5
 done
-docker compose exec -T ollama ollama pull "${SAMATHA_DEFAULT_MODEL:-qwen2.5:0.5b}"
 
-echo "==> Warm up Ollama model (first token latency)"
-docker compose exec -T ollama ollama run "${SAMATHA_DEFAULT_MODEL:-qwen2.5:0.5b}" "Respond with exactly: KLAAR" >/dev/null || true
+echo "==> Validate model + services"
+docker compose exec -T ollama ollama list | grep -q "${SAMATHA_DEFAULT_MODEL}"
+docker compose exec -T ollama ollama list | grep -q "${SAMANTHA_MODEL_NAME:-samantha}"
+docker compose exec -T automation-mcp-server python - <<'PY'
+import urllib.request
+
+assert urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=5).status == 200
+print('mcp-health-ok')
+PY
+
+curl -kfsS "https://127.0.0.1:${OPEN_WEBUI_PORT:-3000}/_app/version.json" >/dev/null
 
 echo "==> Compose status"
 docker compose ps
 
-echo "==> Samatha logs (tail=$LOG_LINES)"
-docker compose logs --tail="$LOG_LINES" samatha-ai
+echo "==> Logs (tail=$LOG_LINES)"
+docker compose logs --tail="$LOG_LINES" samatha-ai stack-ops automation-mcp-server caddy
