@@ -124,6 +124,22 @@ assert urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=5).status 
 print('mcp-health-ok')
 PY
 
+echo "==> Wait for Open WebUI readiness"
+for i in $(seq 1 90); do
+  if docker compose exec -T samatha-ai sh -lc 'curl -fsS http://127.0.0.1:8080/_app/version.json >/dev/null'; then
+    break
+  fi
+  sleep 4
+done
+
+echo "==> Verify Caddy HTTPS endpoint"
+for i in $(seq 1 60); do
+  if curl -kfsS "https://127.0.0.1:${OPEN_WEBUI_PORT:-3000}/_app/version.json" >/dev/null; then
+    break
+  fi
+  sleep 2
+done
+
 curl -kfsS "https://127.0.0.1:${OPEN_WEBUI_PORT:-3000}/_app/version.json" >/dev/null
 
 echo "==> Compose status"
