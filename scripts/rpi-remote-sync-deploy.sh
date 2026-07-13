@@ -104,15 +104,25 @@ docker compose pull
 echo "==> Start stack"
 docker compose up -d --build
 
-echo "==> Wait for health"
+echo "==> Wait for core services"
 deadline=$((SECONDS + 360))
 while [[ $SECONDS -lt $deadline ]]; do
-  unhealthy="$(docker compose ps --format json | python3 -c 'import json,sys; data=[json.loads(l) for l in sys.stdin if l.strip()]; bad=[d for d in data if d.get("Health") not in ("healthy", "")]; print(len(bad))')"
-  if [[ "$unhealthy" == "0" ]]; then
+  running_count="$(docker compose ps --services --status running | wc -l | tr -d '[:space:]')"
+  if [[ "${running_count:-0}" -ge 6 ]]; then
     break
   fi
   sleep 5
 done
+
+echo "==> Ensure Samantha model alias exists"
+if ! docker compose exec -T ollama ollama list | grep -q "${SAMANTHA_MODEL_NAME:-samantha}"; then
+  docker compose exec -T ollama sh -lc "cat >/tmp/Modelfile.samantha <<'EOF'
+FROM ${SAMATHA_DEFAULT_MODEL}
+SYSTEM You are Samantha, a concise Dutch-speaking home assistant.
+PARAMETER temperature 0.3
+EOF
+ollama create ${SAMANTHA_MODEL_NAME:-samantha} -f /tmp/Modelfile.samantha"
+fi
 
 echo "==> Validate model + services"
 docker compose exec -T ollama ollama list | grep -q "${SAMATHA_DEFAULT_MODEL}"
