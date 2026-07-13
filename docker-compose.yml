@@ -91,7 +91,7 @@ services:
     labels:
       com.centurylinklabs.watchtower.enable: "true"
     healthcheck:
-      test: ["CMD-SHELL", "ps aux | grep -q '[w]yoming_whisper'"]
+      test: ["CMD-SHELL", "pgrep -f wyoming_faster_whisper >/dev/null 2>&1"]
       interval: 30s
       timeout: 8s
       retries: 8
@@ -101,7 +101,7 @@ services:
     image: ${WYOMING_PIPER_IMAGE:-rhasspy/wyoming-piper:latest}
     container_name: wyoming-piper
     restart: unless-stopped
-    command: ["--voice", "${WYOMING_PIPER_VOICE:-nl_NL-nathalie-medium}", "--uri", "tcp://0.0.0.0:10200"]
+    command: ["--voice", "${WYOMING_PIPER_VOICE:-nl_BE-nathalie-medium}", "--uri", "tcp://0.0.0.0:10200"]
     ports:
       - "${WYOMING_PIPER_PORT:-10200}:10200"
     volumes:
@@ -113,7 +113,7 @@ services:
     labels:
       com.centurylinklabs.watchtower.enable: "true"
     healthcheck:
-      test: ["CMD-SHELL", "ps aux | grep -q '[w]yoming_piper'"]
+      test: ["CMD-SHELL", "pgrep -f wyoming_piper >/dev/null 2>&1"]
       interval: 30s
       timeout: 8s
       retries: 8
@@ -129,9 +129,9 @@ services:
       automation-mcp-server:
         condition: service_healthy
       wyoming-whisper:
-        condition: service_healthy
+        condition: service_started
       wyoming-piper:
-        condition: service_healthy
+        condition: service_started
     expose:
       - "8080"
     volumes:
