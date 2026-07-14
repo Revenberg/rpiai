@@ -114,11 +114,18 @@ pull_image_with_retry() {
   local image="$1"
   local attempt
   local delay=12
+  local pull_timeout="${DOCKER_PULL_TIMEOUT:-1800}"
 
   for attempt in 1 2 3 4 5 6 7 8; do
     echo "--> Pull ${image} (attempt ${attempt}/8)"
-    if docker pull "${image}"; then
-      return 0
+    if command -v timeout >/dev/null 2>&1; then
+      if timeout "$pull_timeout" docker pull "${image}"; then
+        return 0
+      fi
+    else
+      if docker pull "${image}"; then
+        return 0
+      fi
     fi
 
     if [[ "$attempt" -lt 8 ]]; then
