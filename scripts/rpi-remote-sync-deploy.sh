@@ -116,9 +116,14 @@ pull_image_with_retry() {
   local delay=12
   local pull_timeout="${DOCKER_PULL_TIMEOUT:-300}"
   local fallback_openwebui_image="${OPENWEBUI_FALLBACK_IMAGE:-openwebui/open-webui:main}"
+  local max_attempts=8
 
-  for attempt in 1 2 3 4 5 6 7 8; do
-    echo "--> Pull ${image} (attempt ${attempt}/8)"
+  if [[ "$image" == "ghcr.io/open-webui/open-webui:latest" ]]; then
+    max_attempts="${OPENWEBUI_PRIMARY_MAX_ATTEMPTS:-2}"
+  fi
+
+  for ((attempt=1; attempt<=max_attempts; attempt++)); do
+    echo "--> Pull ${image} (attempt ${attempt}/${max_attempts})"
     if command -v timeout >/dev/null 2>&1; then
       if timeout "$pull_timeout" docker pull "${image}"; then
         return 0
@@ -129,7 +134,7 @@ pull_image_with_retry() {
       fi
     fi
 
-    if [[ "$attempt" -lt 8 ]]; then
+    if [[ "$attempt" -lt "$max_attempts" ]]; then
       echo "Pull failed for ${image} (attempt ${attempt}), retrying in ${delay}s..."
       sleep "$delay"
       if [[ "$delay" -lt 90 ]]; then
