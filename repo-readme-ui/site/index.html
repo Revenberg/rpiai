@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>rpiai README UI</title>
+  <style>
+    :root {
+      --bg: #f2f5f7;
+      --card: #ffffff;
+      --text: #12212f;
+      --muted: #4f6475;
+      --accent: #007a5a;
+      --border: #d9e3ea;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at 20% 10%, #e7f6ef, transparent 30%),
+                  radial-gradient(circle at 90% 0%, #e4eef8, transparent 40%),
+                  var(--bg);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 10px 32px rgba(14, 30, 43, 0.08);
+      overflow: hidden;
+    }
+
+    .topbar {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(90deg, #f0faf6, #f5f9fc);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .content {
+      padding: 24px;
+      line-height: 1.6;
+    }
+
+    .content h1, .content h2, .content h3 {
+      color: #0a273e;
+      line-height: 1.25;
+    }
+
+    .content a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .content a:hover {
+      text-decoration: underline;
+    }
+
+    .content code {
+      background: #f3f7fa;
+      border: 1px solid #dbe6ee;
+      border-radius: 4px;
+      padding: 2px 6px;
+    }
+
+    .content pre {
+      background: #0f1b28;
+      color: #ecf4ff;
+      border-radius: 8px;
+      padding: 12px;
+      overflow-x: auto;
+    }
+
+    .content table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    .content th, .content td {
+      border: 1px solid #dce6ee;
+      padding: 8px;
+      text-align: left;
+    }
+
+    .content th {
+      background: #f2f8fc;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">rpiai repository dashboard</div>
+    <main id="app" class="content">Loading README...</main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    fetch("./README.md")
+      .then(function (res) {
+        if (!res.ok) {
+          throw new Error("Failed to load README.md");
+        }
+        return res.text();
+      })
+      .then(function (md) {
+        document.getElementById("app").innerHTML = marked.parse(md);
+      })
+      .catch(function (err) {
+        document.getElementById("app").textContent = "Error: " + err.message;
+      });
+  </script>
+</body>
+</html>

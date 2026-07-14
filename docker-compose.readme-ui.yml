@@ -1,0 +1,8 @@
+services:
+  repo-readme-ui:
+    build:
+      context: ./repo-readme-ui
+    container_name: repo-readme-ui
+    restart: unless-stopped
+    ports:
+      - "80:80"
