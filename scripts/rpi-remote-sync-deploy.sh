@@ -90,6 +90,10 @@ YAML
 echo "==> Validate compose"
 docker compose config >/dev/null
 
+# Give slower links and ARM devices more headroom for registry operations.
+export DOCKER_CLIENT_TIMEOUT="${DOCKER_CLIENT_TIMEOUT:-600}"
+export COMPOSE_HTTP_TIMEOUT="${COMPOSE_HTTP_TIMEOUT:-600}"
+
 echo "==> Stop current stack"
 docker compose down --remove-orphans || true
 
@@ -98,22 +102,47 @@ if [[ "$FULL_RESET" == "1" ]]; then
   docker ps -aq | xargs -r docker rm -f
 fi
 
-echo "==> Pull images"
-pull_ok=0
-for attempt in 1 2 3 4 5; do
-  echo "--> Pull attempt ${attempt}/5"
-  if docker compose pull; then
-    pull_ok=1
-    break
-  fi
-  echo "Pull failed (attempt ${attempt}), retrying in 20s..."
-  sleep 20
-done
+echo "==> Pull images (per-image retries)"
+mapfile -t compose_images < <(docker compose config --images | awk 'NF' | sort -u)
 
-if [[ "$pull_ok" != "1" ]]; then
-  echo "Image pull failed after retries" >&2
+if [[ "${#compose_images[@]}" -eq 0 ]]; then
+  echo "No images found in compose config" >&2
   exit 1
 fi
+
+pull_image_with_retry() {
+  local image="$1"
+  local attempt
+  local delay=12
+
+  for attempt in 1 2 3 4 5 6 7 8; do
+    echo "--> Pull ${image} (attempt ${attempt}/8)"
+    if docker pull "${image}"; then
+      return 0
+    fi
+
+    if [[ "$attempt" -lt 8 ]]; then
+      echo "Pull failed for ${image} (attempt ${attempt}), retrying in ${delay}s..."
+      sleep "$delay"
+      if [[ "$delay" -lt 90 ]]; then
+        delay=$((delay * 2))
+        if [[ "$delay" -gt 90 ]]; then
+          delay=90
+        fi
+      fi
+    fi
+  done
+
+  echo "Failed to pull image after retries: ${image}" >&2
+  return 1
+}
+
+for image in "${compose_images[@]}"; do
+  pull_image_with_retry "$image"
+done
+
+echo "==> Pull buildable services if needed"
+docker compose pull --ignore-buildable || true
 
 echo "==> Start stack"
 docker compose up -d --build
