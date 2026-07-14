@@ -99,7 +99,21 @@ if [[ "$FULL_RESET" == "1" ]]; then
 fi
 
 echo "==> Pull images"
-docker compose pull
+pull_ok=0
+for attempt in 1 2 3 4 5; do
+  echo "--> Pull attempt ${attempt}/5"
+  if docker compose pull; then
+    pull_ok=1
+    break
+  fi
+  echo "Pull failed (attempt ${attempt}), retrying in 20s..."
+  sleep 20
+done
+
+if [[ "$pull_ok" != "1" ]]; then
+  echo "Image pull failed after retries" >&2
+  exit 1
+fi
 
 echo "==> Start stack"
 docker compose up -d --build
