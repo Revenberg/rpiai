@@ -115,7 +115,7 @@ pull_image_with_retry() {
   local attempt
   local delay=12
   local pull_timeout="${DOCKER_PULL_TIMEOUT:-300}"
-  local fallback_openwebui_image="${OPENWEBUI_FALLBACK_IMAGE:-openwebui/open-webui:main}"
+  local fallback_openwebui_image="${OPENWEBUI_FALLBACK_IMAGE:-openwebui/open-webui:latest}"
   local max_attempts=8
 
   if [[ "$image" == "ghcr.io/open-webui/open-webui:latest" ]]; then
