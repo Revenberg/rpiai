@@ -4,6 +4,9 @@
 
 {$CADDY_SITE_ADDRESS} {
   encode zstd gzip
+  handle_path /readme* {
+    reverse_proxy repo-readme-ui:80
+  }
   reverse_proxy samatha-ai:8080
   tls internal
 }

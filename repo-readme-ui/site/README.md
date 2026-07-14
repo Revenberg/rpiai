@@ -21,7 +21,7 @@ Replace `<RPi-IP-or-DNS>` with your real Raspberry Pi IP or DNS name
 
 | Service GUI | URL | Port |
 |---|---|---|
-| This README UI container | `http://<RPi-IP-or-DNS>:80` | 80 |
+| This README UI via Caddy route | `https://<RPi-IP-or-DNS>:3000/readme` | 3000 |
 | Samatha / Open WebUI (via Caddy HTTPS) | `https://<RPi-IP-or-DNS>:3000` | 3000 |
 | RPi Monitor (Glances web UI) | `http://<RPi-IP-or-DNS>:61208` | 61208 |
 
@@ -30,19 +30,19 @@ Replace `<RPi-IP-or-DNS>` with your real Raspberry Pi IP or DNS name
 - Ollama: `http://<RPi-IP-or-DNS>:11434`
 - Automation MCP health: `http://<RPi-IP-or-DNS>:8080/health`
 
-## Run This README Container
+## Run With Main Stack And Caddy Routing
 
 From the repo root:
 
 ```bash
-docker compose -f docker-compose.readme-ui.yml up -d --build
+docker compose up -d --build repo-readme-ui caddy
 ```
 
 Then open:
 
-- `http://<RPi-IP-or-DNS>:80`
+- `https://<RPi-IP-or-DNS>:3000/readme`
 
 ## Notes
 
-- Port 80 may already be used by the existing `caddy` container in the main stack.
-- If port 80 is in use, stop Caddy first or run this README UI on another host port.
+- If Caddy is configured with `tls internal`, your browser may show a certificate warning.
+- You can still run the standalone compose file if you specifically want README on host port 80.

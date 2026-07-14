@@ -177,6 +177,8 @@ services:
     depends_on:
       samatha-ai:
         condition: service_started
+      repo-readme-ui:
+        condition: service_started
     ports:
       - "${CADDY_HTTP_PORT:-80}:80"
       - "${OPEN_WEBUI_PORT:-3000}:443"
@@ -201,6 +203,18 @@ services:
       timeout: 8s
       retries: 8
       start_period: 20s
+
+  repo-readme-ui:
+    build:
+      context: ./repo-readme-ui
+    container_name: repo-readme-ui
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
 
   watchtower:
     image: ${WATCHTOWER_IMAGE:-containrrr/watchtower:1.7.1}
