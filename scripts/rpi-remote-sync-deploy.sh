@@ -115,6 +115,7 @@ pull_image_with_retry() {
   local attempt
   local delay=12
   local pull_timeout="${DOCKER_PULL_TIMEOUT:-300}"
+  local fallback_openwebui_image="${OPENWEBUI_FALLBACK_IMAGE:-openwebui/open-webui:main}"
 
   for attempt in 1 2 3 4 5 6 7 8; do
     echo "--> Pull ${image} (attempt ${attempt}/8)"
@@ -139,6 +140,21 @@ pull_image_with_retry() {
       fi
     fi
   done
+
+  if [[ "$image" == "ghcr.io/open-webui/open-webui:latest" ]]; then
+    echo "Primary source failed for ${image}. Trying fallback image ${fallback_openwebui_image}..."
+    if command -v timeout >/dev/null 2>&1; then
+      if timeout "$pull_timeout" docker pull "$fallback_openwebui_image"; then
+        docker tag "$fallback_openwebui_image" "$image"
+        return 0
+      fi
+    else
+      if docker pull "$fallback_openwebui_image"; then
+        docker tag "$fallback_openwebui_image" "$image"
+        return 0
+      fi
+    fi
+  fi
 
   echo "Failed to pull image after retries: ${image}" >&2
   return 1
