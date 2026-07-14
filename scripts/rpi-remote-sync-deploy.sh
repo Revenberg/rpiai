@@ -104,6 +104,8 @@ fi
 
 echo "==> Pull images (per-image retries)"
 mapfile -t compose_images < <(docker compose config --images | awk 'NF' | sort -u)
+openwebui_pull_failed=0
+allow_degraded_deploy="${ALLOW_DEGRADED_DEPLOY:-1}"
 
 if [[ "${#compose_images[@]}" -eq 0 ]]; then
   echo "No images found in compose config" >&2
@@ -166,20 +168,56 @@ pull_image_with_retry() {
 }
 
 for image in "${compose_images[@]}"; do
-  pull_image_with_retry "$image"
+  if pull_image_with_retry "$image"; then
+    continue
+  fi
+
+  if [[ "$image" == "ghcr.io/open-webui/open-webui:latest" && "$allow_degraded_deploy" == "1" ]]; then
+    openwebui_pull_failed=1
+    echo "WARNING: Open WebUI image pull failed; continuing in degraded mode without samatha-ai/caddy/stack-ops"
+    continue
+  fi
+
+  echo "Image pull failed and cannot continue: ${image}" >&2
+  exit 1
 done
 
 echo "==> Pull buildable services if needed"
 docker compose pull --ignore-buildable || true
 
 echo "==> Start stack"
-docker compose up -d --build
+if [[ "$openwebui_pull_failed" == "1" ]]; then
+  mapfile -t compose_services < <(docker compose config --services)
+  start_services=()
+  for svc in "${compose_services[@]}"; do
+    case "$svc" in
+      samatha-ai|caddy|stack-ops)
+        ;;
+      *)
+        start_services+=("$svc")
+        ;;
+    esac
+  done
+
+  if [[ "${#start_services[@]}" -eq 0 ]]; then
+    echo "No services left to start in degraded mode" >&2
+    exit 1
+  fi
+
+  docker compose up -d --build "${start_services[@]}"
+else
+  docker compose up -d --build
+fi
 
 echo "==> Wait for core services"
 deadline=$((SECONDS + 360))
+expected_running=6
+if [[ "$openwebui_pull_failed" == "1" ]]; then
+  expected_running=4
+fi
 while [[ $SECONDS -lt $deadline ]]; do
   running_count="$(docker compose ps --services --status running | wc -l | tr -d '[:space:]')"
-  if [[ "${running_count:-0}" -ge 6 ]]; then
+  if [[ "${running_count:-0}" -ge "$expected_running" ]]; then
     break
   fi
   sleep 5
@@ -205,26 +243,34 @@ assert urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=5).status 
 print('mcp-health-ok')
 PY
 
-echo "==> Wait for Open WebUI readiness"
-for i in $(seq 1 90); do
-  if docker compose exec -T samatha-ai sh -lc 'curl -fsS http://127.0.0.1:8080/_app/version.json >/dev/null'; then
-    break
-  fi
-  sleep 4
-done
+if [[ "$openwebui_pull_failed" != "1" ]]; then
+  echo "==> Wait for Open WebUI readiness"
+  for i in $(seq 1 90); do
+    if docker compose exec -T samatha-ai sh -lc 'curl -fsS http://127.0.0.1:8080/_app/version.json >/dev/null'; then
+      break
+    fi
+    sleep 4
+  done
 
-echo "==> Verify Caddy HTTPS endpoint"
-for i in $(seq 1 60); do
-  if curl -kfsS "https://127.0.0.1:${OPEN_WEBUI_PORT:-3000}/_app/version.json" >/dev/null; then
-    break
-  fi
-  sleep 2
-done
+  echo "==> Verify Caddy HTTPS endpoint"
+  for i in $(seq 1 60); do
+    if curl -kfsS "https://127.0.0.1:${OPEN_WEBUI_PORT:-3000}/_app/version.json" >/dev/null; then
+      break
+    fi
+    sleep 2
+  done
 
-curl -kfsS "https://127.0.0.1:${OPEN_WEBUI_PORT:-3000}/_app/version.json" >/dev/null
+  curl -kfsS "https://127.0.0.1:${OPEN_WEBUI_PORT:-3000}/_app/version.json" >/dev/null
+else
+  echo "==> Open WebUI checks skipped (degraded mode)"
+fi
 
 echo "==> Compose status"
 docker compose ps
 
 echo "==> Logs (tail=$LOG_LINES)"
-docker compose logs --tail="$LOG_LINES" samatha-ai stack-ops automation-mcp-server caddy
+if [[ "$openwebui_pull_failed" == "1" ]]; then
+  docker compose logs --tail="$LOG_LINES" automation-mcp-server ollama rpi-monitor
+else
+  docker compose logs --tail="$LOG_LINES" samatha-ai stack-ops automation-mcp-server caddy
+fi
