@@ -114,7 +114,7 @@ pull_image_with_retry() {
   local image="$1"
   local attempt
   local delay=12
-  local pull_timeout="${DOCKER_PULL_TIMEOUT:-1800}"
+  local pull_timeout="${DOCKER_PULL_TIMEOUT:-300}"
 
   for attempt in 1 2 3 4 5 6 7 8; do
     echo "--> Pull ${image} (attempt ${attempt}/8)"
