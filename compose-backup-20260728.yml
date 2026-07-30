@@ -1,0 +1,412 @@
+name: rpiai
+services:
+  auto-backup:
+    cap_drop:
+      - ALL
+    container_name: auto-backup
+    entrypoint:
+      - /bin/sh
+      - /opt/backup-loop.sh
+    environment:
+      BACKUP_INTERVAL_SECONDS: "21600"
+      BACKUP_RETENTION_DAYS: "14"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - test -f /state/last_backup
+      timeout: 8s
+      interval: 1m0s
+      retries: 5
+      start_period: 2m0s
+    image: alpine:3.22
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    networks:
+      default: null
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+    volumes:
+      - type: bind
+        source: /home/pi/rpiai/scripts/container/backup-loop.sh
+        target: /opt/backup-loop.sh
+        read_only: true
+        bind: {}
+      - type: volume
+        source: samatha_data
+        target: /src/samatha
+        read_only: true
+        volume: {}
+      - type: volume
+        source: ollama_data
+        target: /src/ollama
+        read_only: true
+        volume: {}
+      - type: bind
+        source: /home/pi/rpiai/automation-mcp-server
+        target: /src/mcp
+        read_only: true
+        bind: {}
+      - type: volume
+        source: backup_data
+        target: /backup
+        volume: {}
+      - type: volume
+        source: backup_state
+        target: /state
+        volume: {}
+  automation-mcp-server:
+    build:
+      context: /home/pi/rpiai/automation-mcp-server
+      dockerfile: Dockerfile
+    cap_drop:
+      - ALL
+    command:
+      - uvicorn
+      - app.main:create_app
+      - --factory
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+    container_name: automation-mcp-server
+    environment:
+      CONFIG_PATH: /app/config.yaml
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3)"
+      timeout: 8s
+      interval: 30s
+      retries: 8
+      start_period: 20s
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    networks:
+      default: null
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+    volumes:
+      - type: bind
+        source: /home/pi/rpiai/automation-mcp-server/config.yaml
+        target: /app/config.yaml
+        read_only: true
+        bind: {}
+  caddy:
+    container_name: caddy
+    depends_on:
+      repo-readme-ui:
+        condition: service_started
+        required: true
+    environment:
+      CADDY_SITE_ADDRESS: rpiai.local
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pidof caddy >/dev/null 2>&1
+      timeout: 8s
+      interval: 30s
+      retries: 8
+      start_period: 20s
+    image: caddy:2.10-alpine
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 80
+        published: "80"
+        protocol: tcp
+      - mode: ingress
+        target: 443
+        published: "443"
+        protocol: tcp
+    read_only: true
+    restart: unless-stopped
+    tmpfs:
+      - /tmp
+    volumes:
+      - type: bind
+        source: /home/pi/rpiai/caddy/Caddyfile
+        target: /etc/caddy/Caddyfile
+        read_only: true
+        bind: {}
+      - type: volume
+        source: caddy_data
+        target: /data
+        volume: {}
+      - type: volume
+        source: caddy_config
+        target: /config
+        volume: {}
+  repo-readme-ui:
+    build:
+      context: /home/pi/rpiai/repo-readme-ui
+      dockerfile: Dockerfile
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    cap_drop:
+      - ALL
+    container_name: repo-readme-ui
+    expose:
+      - "80"
+    networks:
+      default: null
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+  rpi-monitor:
+    container_name: rpi-monitor
+    environment:
+      GLANCES_OPT: -w
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:61208', timeout=5)"
+      timeout: 8s
+      interval: 30s
+      retries: 8
+      start_period: 30s
+    image: nicolargo/glances:4.3.1
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    networks:
+      default: null
+    pid: host
+    ports:
+      - mode: ingress
+        target: 61208
+        published: "61208"
+        protocol: tcp
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        read_only: true
+        bind: {}
+  samatha-ai:
+    container_name: samatha-ai
+    depends_on:
+      automation-mcp-server:
+        condition: service_healthy
+        required: true
+      wyoming-piper:
+        condition: service_started
+        required: true
+      wyoming-whisper:
+        condition: service_started
+        required: true
+    environment:
+      AUDIO_STT_LANGUAGE: nl
+      AUDIO_STT_PROVIDER: wyoming
+      AUDIO_STT_URL: tcp://wyoming-whisper:10300
+      AUDIO_TTS_PROVIDER: wyoming
+      AUDIO_TTS_URL: tcp://wyoming-piper:10200
+      DEFAULT_MODELS: qwen2.5:0.5b
+      ENABLE_CODE_EXECUTION: "False"
+      ENABLE_CODE_INTERPRETER: "False"
+      ENABLE_MEMORIES: "False"
+      ENABLE_OLLAMA_API: "False"
+      SAMATHA_MCP_SERVER_URL: http://automation-mcp-server:8080/mcp
+      TOOL_SERVER_CONNECTIONS: '[]'
+      WEBUI_AUTH: "True"
+    expose:
+      - "8080"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/_app/version.json', timeout=5)"
+      timeout: 8s
+      interval: 30s
+      retries: 8
+      start_period: 1m30s
+    image: ghcr.io/open-webui/open-webui:latest
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    networks:
+      default: null
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - type: volume
+        source: samatha_data
+        target: /app/backend/data
+        volume: {}
+  stack-ops:
+    cap_drop:
+      - ALL
+    container_name: stack-ops
+    depends_on:
+      automation-mcp-server:
+        condition: service_healthy
+        required: true
+      samatha-ai:
+        condition: service_started
+        required: true
+    entrypoint:
+      - /bin/sh
+      - /opt/stack-ops.sh
+    environment:
+      CADDY_PUBLIC_URL: https://rpiai.local:3000
+      DEFAULT_MODEL: qwen2.5:0.5b
+      MCP_BASE_URL: http://automation-mcp-server:8080
+      OPENWEBUI_BASE_URL: http://samatha-ai:8080
+      OPS_LOOP_SECONDS: "300"
+      REQUIRE_HTTPS_CHECK: "false"
+      SAMANTHA_MODEL_NAME: samantha
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - test -f /state/last_success && find /state/last_success -mmin -20 | grep -q last_success
+      timeout: 8s
+      interval: 1m0s
+      retries: 5
+      start_period: 2m0s
+    image: alpine:3.22
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    networks:
+      default: null
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+    volumes:
+      - type: bind
+        source: /home/pi/rpiai/scripts/container/stack-ops.sh
+        target: /opt/stack-ops.sh
+        read_only: true
+        bind: {}
+      - type: bind
+        source: /home/pi/rpiai/models/Modelfile.samantha
+        target: /opt/Modelfile.samantha
+        read_only: true
+        bind: {}
+      - type: volume
+        source: stack_ops_state
+        target: /state
+        volume: {}
+  watchtower:
+    command:
+      - --cleanup
+      - --label-enable
+      - --rolling-restart
+      - --schedule
+      - 0 0 4 * * *
+    container_name: watchtower
+    image: containrrr/watchtower:1.7.1
+    networks:
+      default: null
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        bind: {}
+  wyoming-piper:
+    cap_drop:
+      - ALL
+    command:
+      - --voice
+      - nl_BE-nathalie-medium
+      - --uri
+      - tcp://0.0.0.0:10200
+    container_name: wyoming-piper
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 10200 >/dev/null 2>&1
+      timeout: 8s
+      interval: 30s
+      retries: 8
+      start_period: 20s
+      disable: true
+    image: rhasspy/wyoming-piper:latest
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 10200
+        published: "10200"
+        protocol: tcp
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - type: volume
+        source: piper_data
+        target: /data
+        volume: {}
+  wyoming-whisper:
+    cap_drop:
+      - ALL
+    command:
+      - --model
+      - tiny-int8
+      - --language
+      - nl
+      - --uri
+      - tcp://0.0.0.0:10300
+    container_name: wyoming-whisper
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 10300 >/dev/null 2>&1
+      timeout: 8s
+      interval: 30s
+      retries: 8
+      start_period: 20s
+      disable: true
+    image: rhasspy/wyoming-whisper:latest
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 10300
+        published: "10300"
+        protocol: tcp
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+networks:
+  default:
+    name: rpiai_default
+volumes:
+  backup_data:
+    name: rpiai_backup_data
+  backup_state:
+    name: rpiai_backup_state
+  caddy_config:
+    name: rpiai_caddy_config
+  caddy_data:
+    name: rpiai_caddy_data
+  ollama_data:
+    name: rpiai_ollama_data
+  piper_data:
+    name: rpiai_piper_data
+  samatha_data:
+    name: rpiai_samatha_data
+  stack_ops_state:
+    name: rpiai_stack_ops_state

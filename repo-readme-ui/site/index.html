@@ -103,7 +103,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script>
-    fetch("./README.md")
+    fetch("/readme/README.md")
       .then(function (res) {
         if (!res.ok) {
           throw new Error("Failed to load README.md");

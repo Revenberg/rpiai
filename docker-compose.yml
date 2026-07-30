@@ -1,6 +1,6 @@
 services:
   rpi-monitor:
-    image: nicolargo/glances:latest
+    image: nicolargo/glances:4.3.1
     container_name: rpi-monitor
     restart: unless-stopped
     ports:
@@ -96,6 +96,7 @@ services:
       timeout: 8s
       retries: 8
       start_period: 20s
+      disable: true
 
   wyoming-piper:
     image: ${WYOMING_PIPER_IMAGE:-rhasspy/wyoming-piper:latest}
@@ -118,7 +119,7 @@ services:
       timeout: 8s
       retries: 8
       start_period: 20s
-
+      disable: true
   samatha-ai:
     image: ${OPEN_WEBUI_IMAGE:-ghcr.io/open-webui/open-webui:latest}
     container_name: samatha-ai
@@ -137,7 +138,10 @@ services:
     volumes:
       - samatha_data:/app/backend/data
     environment:
+      ENABLE_FORWARD_USER_INFO_HEADERS: True
       WEBUI_AUTH: ${OPEN_WEBUI_AUTH:-True}
+      ENABLE_PERSISTENT_CONFIG: False
+      ENABLE_WEBSOCKET_SUPPORT: true
       ENABLE_OLLAMA_API: "True"
       OLLAMA_BASE_URL: ${SAMATHA_OLLAMA_BASE_URL:-http://ollama:11434}
       OPENAI_API_BASE_URL: ${SAMATHA_CONTAINER_API_BASE_URL:-http://ollama:11434/v1}
@@ -180,21 +184,18 @@ services:
       repo-readme-ui:
         condition: service_started
     ports:
-      - "${CADDY_HTTP_PORT:-80}:80"
-      - "${OPEN_WEBUI_PORT:-3000}:443"
+      - "80:80"
+      - "443:443"
     environment:
       CADDY_SITE_ADDRESS: ${CADDY_SITE_ADDRESS:-localhost}
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+      - ./caddy/certs:/etc/caddy/certs:ro
     read_only: true
     tmpfs:
       - /tmp
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
     labels:
       com.centurylinklabs.watchtower.enable: "true"
     healthcheck:
@@ -207,23 +208,27 @@ services:
   repo-readme-ui:
     build:
       context: ./repo-readme-ui
+      dockerfile: Dockerfile
     container_name: repo-readme-ui
     restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
+    expose:
+      - "80"
     cap_drop:
       - ALL
-    labels:
-      com.centurylinklabs.watchtower.enable: "true"
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges:true
 
   watchtower:
-    image: ${WATCHTOWER_IMAGE:-containrrr/watchtower:1.7.1}
+    image: ${WATCHTOWER_IMAGE:-nickfedor/watchtower:latest}
     container_name: watchtower
     restart: unless-stopped
     command:
       - --cleanup
       - --label-enable
-      - --rolling-restart
       - --schedule
       - ${WATCHTOWER_SCHEDULE:-0 0 4 * * *}
     volumes:
@@ -255,6 +260,7 @@ services:
     volumes:
       - ./scripts/container/stack-ops.sh:/opt/stack-ops.sh:ro
       - ./models/Modelfile.samantha:/opt/Modelfile.samantha:ro
+      - ./automation-mcp-server/config.yaml:/src/mcp/config.yaml:ro
       - stack_ops_state:/state
     read_only: true
     tmpfs:
@@ -302,6 +308,20 @@ services:
       timeout: 8s
       retries: 5
       start_period: 120s
+
+  openwebui-admin-init:
+    image: keinos/sqlite3
+    container_name: openwebui-admin-init
+    depends_on:
+      samatha-ai:
+        condition: service_healthy
+    user: root
+    volumes_from:
+      - samatha-ai
+    volumes:
+      - ./make-openwebui-admin.sh:/make-openwebui-admin.sh:ro
+    entrypoint: ["/bin/sh", "/make-openwebui-admin.sh"]
+    restart: "no"
 
 volumes:
   ollama_data:
