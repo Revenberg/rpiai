@@ -19,6 +19,12 @@ else
   REMOTE_CMD=""
 fi
 
+until ping -n 1 -w 1 "$PI_HOST"; do
+    sleep 1
+done
+
+ssh-keygen -R $PI_HOST
+
 if ! command -v ssh >/dev/null 2>&1; then
   echo "Error: ssh is not installed or not in PATH."
   exit 1
