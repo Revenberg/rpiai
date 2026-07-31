@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+mapfile -t compose_images < <(docker compose config --images | awk 'NF' | sort -u)set -euo pipefail
 
 # This script runs on the Raspberry Pi inside the rpiai repository.
 # Args: [branch] [log_lines] [status_only] [full_reset]
@@ -131,15 +131,15 @@ pull_image_with_retry() {
   fi
 
   for ((attempt=1; attempt<=max_attempts; attempt++)); do
-    echo "--> Pull ${image} (attempt ${attempt}/${max_attempts})"
-    if command -v timeout >/dev/null 2>&1; then
-      if timeout "$pull_timeout" docker pull "${image}"; then
+    #echo "--> Pull ${image} (attempt ${attempt}/${max_attempts})"
+    if ommand -v timeout >/dev/null 2>&1; then
+    #  if timeout "$pull_timeout" docker pull "${image}"; then
         return 0
-      fi
+    #  fi
     else
-      if docker pull "${image}"; then
+ #     if docker pull "${image}"; then
         return 0
-      fi
+ #     fi
     fi
 
     if [[ "$attempt" -lt "$max_attempts" ]]; then

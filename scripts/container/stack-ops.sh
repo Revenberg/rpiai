@@ -53,7 +53,8 @@ ensure_samantha_model() {
   echo "$tags" | grep -q "\"name\":\"$SAMANTHA_MODEL_NAME" && return 0
 
   # Create a Samantha alias model on top of qwen.
-  http_post_json "$OLLAMA_BASE_URL/api/create" "{\"name\":\"$SAMANTHA_MODEL_NAME\",\"modelfile\":\"FROM $DEFAULT_MODEL\\nSYSTEM You are Samantha, a concise Dutch-speaking home assistant.\\nPARAMETER temperature 0.3\\n\",\"stream\":false}" >/dev/null
+  http_post_json "$OLLAMA_BASE_URL/api/create" \
+   "{\"name\":\"$SAMANTHA_MODEL_NAME\",\"from\":\"$DEFAULT_MODEL\",\"system\":\"You are Samantha, a concise Dutch-speaking home assistant.\",\"parameters\":{\"temperature\":0.3},\"stream\":false}" >/dev/null
 }
 
 initialize_openwebui() {
