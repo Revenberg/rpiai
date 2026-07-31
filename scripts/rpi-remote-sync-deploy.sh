@@ -116,12 +116,18 @@ pull_image_with_retry() {
   local image="$1"
   local attempt
   local delay=12
-  local pull_timeout="${DOCKER_PULL_TIMEOUT:-300}"
+  # Large ARM images (notably ollama) can be silent for >5 minutes while extracting layers.
+  local pull_timeout="${DOCKER_PULL_TIMEOUT:-1200}"
   local fallback_openwebui_image="${OPENWEBUI_FALLBACK_IMAGE:-openwebui/open-webui:latest}"
   local max_attempts=8
 
   if [[ "$image" == "ghcr.io/open-webui/open-webui:latest" ]]; then
     max_attempts="${OPENWEBUI_PRIMARY_MAX_ATTEMPTS:-2}"
+  fi
+
+  if [[ "$image" == "ollama/ollama:latest" ]]; then
+    pull_timeout="${OLLAMA_PULL_TIMEOUT:-1800}"
+    max_attempts="${OLLAMA_PULL_MAX_ATTEMPTS:-4}"
   fi
 
   for ((attempt=1; attempt<=max_attempts; attempt++)); do
