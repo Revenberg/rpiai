@@ -93,12 +93,7 @@ curl -kfsS "$SAMATHA_BASE_URL/api/version" | python3 -m json.tool
 print_header "Samantha signin"
 SIGNIN_PAYLOAD=$(printf '{"email":"%s","password":"%s"}' "$SAMATHA_EMAIL" "$SAMATHA_PASSWORD")
 SIGNIN_JSON=$(curl -kfsS -X POST "$SAMATHA_BASE_URL/api/v1/auths/signin" -H "Content-Type: application/json" -d "$SIGNIN_PAYLOAD")
-SAMATHA_TOKEN=$(printf '%s' "$SIGNIN_JSON" | python3 - <<'PY'
-import json, sys
-obj = json.load(sys.stdin)
-print(obj.get("token", ""))
-PY
-)
+SAMATHA_TOKEN=$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("token",""))' <<<"$SIGNIN_JSON")
 
 if [[ -z "$SAMATHA_TOKEN" ]]; then
   echo "ERROR: signin succeeded but no token returned" >&2
@@ -130,16 +125,14 @@ PY
 )
 
 CHAT_RESPONSE=$(curl -kfsS -X POST "$SAMATHA_BASE_URL/jarvis/api/chat/completions" -H "Content-Type: application/json" -d "$CHAT_JSON")
-printf '%s' "$CHAT_RESPONSE" | python3 - <<'PY'
-import json, sys
-obj = json.load(sys.stdin)
-msg = ""
+python3 -c 'import json,sys
+obj=json.load(sys.stdin)
+msg=""
 try:
-    msg = obj.get("choices", [{}])[0].get("message", {}).get("content", "")
+  msg=obj.get("choices", [{}])[0].get("message", {}).get("content", "")
 except Exception:
-    msg = ""
-print(msg if msg else json.dumps(obj, indent=2, ensure_ascii=False))
-PY
+  msg=""
+print(msg if msg else json.dumps(obj, indent=2, ensure_ascii=False))' <<<"$CHAT_RESPONSE"
 
 print_header "automation-mcp-server logs (laatste 2 minuten, tool calls)"
 docker compose logs --since 2m automation-mcp-server | grep -E 'homey\.|ha\.' || echo "Geen expliciete tool-call regels gevonden in dit interval."
@@ -152,24 +145,22 @@ if [[ -z "$HOMEY_URL" || -z "$HOMEY_TOKEN" || "$HOMEY_TOKEN" == CHANGE_ME* ]]; t
   echo "SKIP: Homey base_url/token ontbreekt of is placeholder in $CONFIG_FILE"
 else
   HOMEY_JSON=$(curl -fsS -H "Authorization: Bearer $HOMEY_TOKEN" "$HOMEY_URL/api/manager/devices/device")
-  printf '%s' "$HOMEY_JSON" | python3 - "$MAX_ROWS" <<'PY'
-import json, sys
-limit = int(sys.argv[1])
-data = json.load(sys.stdin)
-items = data.values() if isinstance(data, dict) else []
-rows = []
+  python3 -c 'import json,sys
+limit=int(sys.argv[1])
+data=json.load(sys.stdin)
+items=data.values() if isinstance(data, dict) else []
+rows=[]
 for d in items:
-    if not isinstance(d, dict):
-        continue
-    name = d.get("name") or d.get("id") or "unknown"
-    status = "online" if d.get("available", True) else "offline"
-    details = d.get("class") or d.get("driverId") or "-"
-    rows.append((name, status, details))
+  if not isinstance(d, dict):
+    continue
+  name=d.get("name") or d.get("id") or "unknown"
+  status="online" if d.get("available", True) else "offline"
+  details=d.get("class") or d.get("driverId") or "-"
+  rows.append((name, status, details))
 rows.sort(key=lambda x: x[0].lower())
 print(f"HOMEY devices shown: {min(len(rows), limit)} / {len(rows)}")
 for name, status, details in rows[:limit]:
-    print(f"- {name} | {status} | {details}")
-PY
+  print(f"- {name} | {status} | {details}")' "$MAX_ROWS" <<<"$HOMEY_JSON"
 fi
 
 print_header "Home Assistant devices/states (direct check)"
@@ -187,27 +178,25 @@ else
     fi
 
     HA_STATES=$(curl -fsS -H "Authorization: Bearer $HA_TOKEN" "$HA_URL/api/states")
-    printf '%s' "$HA_STATES" | python3 - "$MAX_ROWS" <<'PY'
-import json, sys
-limit = int(sys.argv[1])
-states = json.load(sys.stdin)
-preferred = {"light", "switch", "climate", "cover", "sensor", "binary_sensor"}
-rows = []
-for item in states:
-    eid = item.get("entity_id", "")
+    python3 -c 'import json,sys
+  limit=int(sys.argv[1])
+  states=json.load(sys.stdin)
+  preferred={"light","switch","climate","cover","sensor","binary_sensor"}
+  rows=[]
+  for item in states:
+    eid=item.get("entity_id", "")
     if "." not in eid:
-        continue
-    domain, _ = eid.split(".", 1)
+      continue
+    domain,_=eid.split(".", 1)
     if domain not in preferred:
-        continue
-    attrs = item.get("attributes") or {}
-    name = attrs.get("friendly_name") or eid
+      continue
+    attrs=item.get("attributes") or {}
+    name=attrs.get("friendly_name") or eid
     rows.append((name, item.get("state", "unknown"), eid))
-rows.sort(key=lambda x: x[0].lower())
-print(f"  HA entities shown: {min(len(rows), limit)} / {len(rows)}")
-for name, state, eid in rows[:limit]:
-    print(f"  - {name} | {state} | {eid}")
-PY
+  rows.sort(key=lambda x: x[0].lower())
+  print(f"  HA entities shown: {min(len(rows), limit)} / {len(rows)}")
+  for name, state, eid in rows[:limit]:
+    print(f"  - {name} | {state} | {eid}")' "$MAX_ROWS" <<<"$HA_STATES"
   done
 fi
 
