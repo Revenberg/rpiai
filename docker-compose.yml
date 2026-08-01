@@ -1,20 +1,4 @@
 services:
-  camera:
-    image: ${CAMERA_IMAGE:-alexxit/go2rtc:latest}
-    container_name: camera
-    restart: unless-stopped
-    ports:
-      - "1984:1984"
-      - "8554:8554"
-      - "8555:8555"
-      - "8555:8555/udp"
-    volumes:
-      - ./camera/go2rtc.yaml:/config/go2rtc.yaml:ro
-    security_opt:
-      - no-new-privileges:true
-    labels:
-      com.centurylinklabs.watchtower.enable: "true"
-
   rpi-monitor:
     image: nicolargo/glances:4.3.1
     container_name: rpi-monitor
@@ -197,10 +181,6 @@ services:
     depends_on:
       samatha-ai:
         condition: service_started
-      jarvis-ui:
-        condition: service_started
-      action-hub:
-        condition: service_started
       repo-readme-ui:
         condition: service_started
     ports:
@@ -241,50 +221,6 @@ services:
       - SETUID
     security_opt:
       - no-new-privileges:true
-
-  jarvis-ui:
-    build:
-      context: ./jarvis-ui
-      dockerfile: Dockerfile
-    container_name: jarvis-ui
-    restart: unless-stopped
-    expose:
-      - "80"
-    cap_drop:
-      - ALL
-    cap_add:
-      - CHOWN
-      - SETGID
-      - SETUID
-    security_opt:
-      - no-new-privileges:true
-
-  action-hub:
-    build:
-      context: ./action-hub
-      dockerfile: Dockerfile
-    container_name: action-hub
-    restart: unless-stopped
-    expose:
-      - "3002"
-    environment:
-      ACTION_HUB_HOST: 0.0.0.0
-      ACTION_HUB_PORT: 3002
-      ACTION_DB_PATH: /data/actions.db
-      HA_PRESENCE_BASE_URL: ${HA_PRESENCE_BASE_URL:-http://homeassistant.local:8123}
-      HA_PRESENCE_TOKEN: ${HA_PRESENCE_TOKEN:-}
-      HA_ENERGY_BASE_URL: ${HA_ENERGY_BASE_URL:-http://homeassistant.local:8123}
-      HA_ENERGY_TOKEN: ${HA_ENERGY_TOKEN:-}
-      HOMEY_BASE_URL: ${HOMEY_BASE_URL:-}
-      HOMEY_TOKEN: ${HOMEY_TOKEN:-}
-      SAMATHA_BASE_URL: ${SAMATHA_BASE_URL:-http://samatha-ai:8080}
-      SAMATHA_API_KEY: ${SAMATHA_API_KEY:-}
-    volumes:
-      - action_hub_data:/data
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
 
   watchtower:
     image: ${WATCHTOWER_IMAGE:-nickfedor/watchtower:latest}
@@ -396,4 +332,3 @@ volumes:
   stack_ops_state:
   backup_data:
   backup_state:
-  action_hub_data:
