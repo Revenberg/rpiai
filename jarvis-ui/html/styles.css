@@ -586,6 +586,7 @@ h3 {
 .chat {
   display: grid;
   min-height: 0;
+  align-content: start;
 }
 
 .chat-log {
@@ -596,6 +597,7 @@ h3 {
   gap: 6px;
   padding-right: 3px;
   padding-bottom: 8px;
+  height: 16rem;
   min-height: 16rem;
   max-height: 16rem;
   scroll-behavior: smooth;
