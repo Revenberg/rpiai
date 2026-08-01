@@ -576,6 +576,52 @@ h3 {
   align-items: center;
 }
 
+.command-input-wrap {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.command-input {
+  width: 100%;
+  border: 1px solid rgba(111, 164, 89, 0.46);
+  border-radius: 10px;
+  background: rgba(8, 14, 8, 0.72);
+  color: #e3f0db;
+  padding: 10px 12px;
+  font-family: "Rajdhani", sans-serif;
+  font-size: 0.94rem;
+}
+
+.command-input::placeholder {
+  color: #9db794;
+}
+
+.command-input:focus {
+  outline: none;
+  border-color: rgba(154, 214, 124, 0.86);
+  box-shadow: 0 0 0 2px rgba(121, 175, 95, 0.25);
+}
+
+.command-send-btn {
+  border: 1px solid rgba(149, 198, 116, 0.9);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(92, 146, 64, 0.92), rgba(48, 84, 34, 0.92));
+  color: #e7f3df;
+  padding: 10px 14px;
+  font-family: "Rajdhani", sans-serif;
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+.command-send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .mic-btn {
   width: 62px;
   height: 62px;
@@ -1004,6 +1050,10 @@ h3 {
   }
 
   .command-row {
+    grid-template-columns: 1fr;
+  }
+
+  .command-input-wrap {
     grid-template-columns: 1fr;
   }
 }

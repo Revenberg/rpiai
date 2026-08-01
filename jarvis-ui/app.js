@@ -23,6 +23,8 @@ const rewriteActionBtnEl = document.getElementById("rewriteActionBtn");
 const testActionBtnEl = document.getElementById("testActionBtn");
 const saveActionBtnEl = document.getElementById("saveActionBtn");
 const actionBuilderStatusEl = document.getElementById("actionBuilderStatus");
+const samathaCommandInputEl = document.getElementById("samathaCommandInput");
+const sendSamathaCommandBtnEl = document.getElementById("sendSamathaCommandBtn");
 
 const DEFAULT_CAMERA_STREAM_URL = "http://localhost:8081/stream.mjpg";
 
@@ -72,18 +74,141 @@ function renderPresence() {
 
 function renderMessages() {
   messages.forEach((msg) => {
-    const row = document.createElement("article");
-    row.className = "msg";
-    row.innerHTML = `
-      <div class="msg-avatar">${msg.who === "Jij" ? "J" : "S"}</div>
-      <div>
-        <strong>${msg.who}</strong>
-        <div>${msg.text}</div>
-      </div>
-      <span class="msg-meta">${msg.time}</span>
-    `;
-    chatLogEl.appendChild(row);
+    appendMessageToChat(msg.who, msg.text, msg.time);
   });
+}
+
+function appendMessageToChat(who, text, time) {
+  if (!chatLogEl) {
+    return;
+  }
+
+  const row = document.createElement("article");
+  row.className = "msg";
+  row.innerHTML = `
+      <div class="msg-avatar">${who === "Jij" ? "J" : "S"}</div>
+      <div>
+        <strong>${who}</strong>
+        <div>${text}</div>
+      </div>
+      <span class="msg-meta">${time}</span>
+    `;
+  chatLogEl.appendChild(row);
+  chatLogEl.scrollTop = chatLogEl.scrollHeight;
+}
+
+function getTimeLabel() {
+  return new Date().toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+function normalizeCommandText(text) {
+  return text
+    .toLowerCase()
+    .replace(/[.,!?]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function parseSamathaCommand(text) {
+  const normalized = normalizeCommandText(text);
+  const hasLightKeyword = /\b(licht|lamp|lampen|verlichting)\b/.test(normalized);
+  const hasLivingRoom = /\b(woonkamer|living|salon)\b/.test(normalized);
+
+  if (hasLightKeyword && hasLivingRoom) {
+    const percentMatch = normalized.match(/(\d{1,3})\s*%/);
+    const level = percentMatch ? Math.max(0, Math.min(100, Number.parseInt(percentMatch[1], 10))) : null;
+    const wantsOff = /\b(uit|stop|uitschakelen)\b/.test(normalized);
+    const wantsOn = /\b(aan|inschakelen)\b/.test(normalized) || level !== null;
+
+    if (wantsOff) {
+      return {
+        target: "home_assistant_energy",
+        command: "call_service",
+        payload: {
+          domain: "light",
+          service: "turn_off",
+          data: {
+            entity_id: "light.woonkamer"
+          }
+        }
+      };
+    }
+
+    if (wantsOn) {
+      const data = { entity_id: "light.woonkamer" };
+      if (level !== null) {
+        data.brightness_pct = level;
+      }
+
+      return {
+        target: "home_assistant_energy",
+        command: "call_service",
+        payload: {
+          domain: "light",
+          service: "turn_on",
+          data
+        }
+      };
+    }
+  }
+
+  if (/\b(energie|verbruik|stroom|meterstand)\b/.test(normalized)) {
+    return {
+      target: "home_assistant_energy",
+      command: "get_states",
+      payload: {}
+    };
+  }
+
+  if (/\b(wie thuis|aanwezig|presence|thuis)\b/.test(normalized)) {
+    return {
+      target: "home_assistant_presence",
+      command: "get_states",
+      payload: {}
+    };
+  }
+
+  return null;
+}
+
+async function queueSamathaCommand(text) {
+  const res = await fetch(`${getActionHubBaseUrl()}/api/actions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      source: "jarvis-ui",
+      status: "queued",
+      text
+    })
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data?.ok) {
+    throw new Error(data?.error || "Opdracht kon niet worden opgeslagen");
+  }
+
+  return data;
+}
+
+async function executeSamathaCommand(text, parsedCommand) {
+  const res = await fetch(`${getActionHubBaseUrl()}/api/actions/execute`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      source: "jarvis-ui",
+      text,
+      target: parsedCommand.target,
+      command: parsedCommand.command,
+      payload: parsedCommand.payload
+    })
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data?.error || "Actie kon niet worden uitgevoerd");
+  }
+
+  return data;
 }
 
 function renderActions() {
@@ -554,6 +679,68 @@ function wireActionBuilder() {
   loadPresetsFromHub();
 }
 
+async function submitSamathaCommand() {
+  if (!samathaCommandInputEl || !sendSamathaCommandBtnEl) {
+    return;
+  }
+
+  const text = samathaCommandInputEl.value.trim();
+  if (!text) {
+    speechEl.textContent = "Typ eerst een opdracht voor Samatha.";
+    return;
+  }
+
+  appendMessageToChat("Jij", text, getTimeLabel());
+  samathaCommandInputEl.value = "";
+  speechEl.textContent = "Opdracht verzenden...";
+
+  sendSamathaCommandBtnEl.disabled = true;
+  samathaCommandInputEl.disabled = true;
+
+  try {
+    const parsed = parseSamathaCommand(text);
+
+    if (parsed) {
+      const execData = await executeSamathaCommand(text, parsed);
+      if (execData?.ok) {
+        appendMessageToChat("Samantha", "Actie uitgevoerd.", getTimeLabel());
+        speechEl.textContent = "Actie uitgevoerd";
+      } else {
+        const errorText = execData?.result?.error || "Onbekende fout";
+        appendMessageToChat("Samantha", `Uitvoeren mislukt (${errorText}). Opdracht in wachtrij gezet.`, getTimeLabel());
+        speechEl.textContent = "Uitvoeren mislukt";
+        await queueSamathaCommand(text);
+      }
+    } else {
+      await queueSamathaCommand(text);
+      appendMessageToChat("Samantha", "Opdracht ontvangen. Ik heb deze in de actielijst gezet.", getTimeLabel());
+      speechEl.textContent = "Opdracht ontvangen";
+    }
+    loadActionsFromHub();
+  } catch (err) {
+    appendMessageToChat("Samantha", `Kon opdracht niet verwerken: ${err.message || "Onbekende fout"}.`, getTimeLabel());
+    speechEl.textContent = "Verzenden mislukt";
+  } finally {
+    sendSamathaCommandBtnEl.disabled = false;
+    samathaCommandInputEl.disabled = false;
+    samathaCommandInputEl.focus();
+  }
+}
+
+function wireSamathaCommandInput() {
+  if (!samathaCommandInputEl || !sendSamathaCommandBtnEl) {
+    return;
+  }
+
+  sendSamathaCommandBtnEl.addEventListener("click", submitSamathaCommand);
+  samathaCommandInputEl.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      submitSamathaCommand();
+    }
+  });
+}
+
 function updateClock() {
   const now = new Date();
   const dateText = now
@@ -741,6 +928,7 @@ updateClock();
 initCamera();
 loadActionsFromHub();
 wireActionBuilder();
+wireSamathaCommandInput();
 
 setInterval(updateClock, 1000);
 setInterval(cycleSpeech, 3800);
