@@ -1,4 +1,20 @@
 services:
+  camera:
+    image: ${CAMERA_IMAGE:-alexxit/go2rtc:latest}
+    container_name: camera
+    restart: unless-stopped
+    ports:
+      - "1984:1984"
+      - "8554:8554"
+      - "8555:8555"
+      - "8555:8555/udp"
+    volumes:
+      - ./camera/go2rtc.yaml:/config/go2rtc.yaml:ro
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+
   rpi-monitor:
     image: nicolargo/glances:4.3.1
     container_name: rpi-monitor
