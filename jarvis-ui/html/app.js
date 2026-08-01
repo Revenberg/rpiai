@@ -1,6 +1,6 @@
 const presenceListEl = document.getElementById("presenceList");
 const chatLogEl = document.getElementById("chatLog");
-const chatTitleEl = document.querySelector(".chat h3");
+const chatCounterEl = document.getElementById("chatCounter");
 const actionLogEl = document.getElementById("actionLog");
 const bottomNavEl = document.getElementById("bottomNav");
 const clockEl = document.getElementById("clockLabel");
@@ -71,11 +71,11 @@ function pruneChatMessages() {
 }
 
 function updateChatCounter() {
-  if (!chatTitleEl || !chatLogEl) {
+  if (!chatCounterEl || !chatLogEl) {
     return;
   }
 
-  chatTitleEl.textContent = `GESPREK (${chatLogEl.children.length}/${MAX_VISIBLE_CHAT_MESSAGES} zichtbaar)`;
+  chatCounterEl.textContent = `(${chatLogEl.children.length}/${MAX_VISIBLE_CHAT_MESSAGES} zichtbaar)`;
 }
 
 function initials(name) {

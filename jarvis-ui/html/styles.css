@@ -132,6 +132,12 @@ h3 {
   font-size: 0.9rem;
 }
 
+.chat-counter {
+  color: var(--muted);
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+}
+
 .home-status {
   display: flex;
   gap: 12px;
