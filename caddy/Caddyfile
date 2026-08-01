@@ -6,6 +6,16 @@
 
     tls /etc/caddy/certs/ip.pem /etc/caddy/certs/ip-key.pem
 
+    handle /camera* {
+        uri strip_prefix /camera
+        reverse_proxy camera:1984
+    }
+
+    handle /jarvis* {
+        uri strip_prefix /jarvis
+        reverse_proxy jarvis-ui:80
+    }
+
     handle /monitor* {
         uri strip_prefix /monitor
         reverse_proxy rpi-monitor:61208
@@ -19,12 +29,22 @@
     handle {
         reverse_proxy repo-readme-ui:80
     }
-}
 
+}
 
 rpiai.local {
 
     tls /etc/caddy/certs/rpiai.local.pem /etc/caddy/certs/rpiai.local-key.pem
+
+    handle /camera* {
+        uri strip_prefix /camera
+        reverse_proxy camera:1984
+    }
+
+    handle /jarvis* {
+        uri strip_prefix /jarvis
+        reverse_proxy jarvis-ui:80
+    }
 
     handle /monitor* {
         uri strip_prefix /monitor
@@ -41,4 +61,3 @@ rpiai.local {
         reverse_proxy samatha-ai:8080
     }
 }
-

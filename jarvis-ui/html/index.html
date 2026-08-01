@@ -88,22 +88,37 @@
       </section>
 
       <aside class="right-column">
-        <article class="card frame camera-card">
-          <div class="card-head">
-            <h3>CAMERA</h3>
-            <div class="camera-head-right">
-              <span class="cam-pill" id="camPill"><span class="cam-dot"></span><span id="camPillText">CONNECTING</span></span>
-              <span id="clockLabel">15:42:31</span>
-            </div>
-          </div>
-          <img id="cameraStream" class="camera-image camera-stream" alt="Live camera stream" />
-          <video id="cameraVideo" class="camera-image camera-video" autoplay muted playsinline></video>
-          <img id="cameraFallback" class="camera-image" src="https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=80" alt="Voortuin camera" />
-          <div class="camera-foot">
-            <span>VOORTUIN</span>
-            <span id="cameraState" class="live">VERBINDEN...</span>
-          </div>
-        </article>
+<article class="card frame camera-card">
+
+  <div class="camera-source">
+    <span id="cameraState" class="live">VERBINDEN...</span>
+
+    <button id="cameraSourceLocal" class="camera-source-btn">
+      LOCAL
+    </button>
+
+    <button id="cameraSourceRpi" class="camera-source-btn active">
+      RPI
+    </button>
+  </div>
+
+  <div class="camera-container">
+
+    <video
+      id="cameraVideo"
+      class="camera-image"
+      autoplay
+      muted
+      playsinline>
+    </video>
+
+    <div id="cameraLoading" class="camera-loading">
+      Verbinden...
+    </div>
+
+  </div>
+
+</article>
 
         <article class="card frame actions-card">
           <h3>ACTIES</h3>
@@ -170,7 +185,8 @@
     <nav class="bottom-nav frame" id="bottomNav"></nav>
   </main>
 
-  <script src="app.js"></script>
+  <script src="jarvis/app.js"></script>
   <script type="module" src="vrm-avatar.js?v=20260709e"></script>
+  <script src="jarvis/camera.js"></script>
 </body>
 </html>
