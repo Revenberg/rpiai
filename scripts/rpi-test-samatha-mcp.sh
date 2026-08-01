@@ -179,24 +179,24 @@ else
 
     HA_STATES=$(curl -fsS -H "Authorization: Bearer $HA_TOKEN" "$HA_URL/api/states")
     python3 -c 'import json,sys
-  limit=int(sys.argv[1])
-  states=json.load(sys.stdin)
-  preferred={"light","switch","climate","cover","sensor","binary_sensor"}
-  rows=[]
-  for item in states:
-    eid=item.get("entity_id", "")
-    if "." not in eid:
-      continue
-    domain,_=eid.split(".", 1)
-    if domain not in preferred:
-      continue
-    attrs=item.get("attributes") or {}
-    name=attrs.get("friendly_name") or eid
-    rows.append((name, item.get("state", "unknown"), eid))
-  rows.sort(key=lambda x: x[0].lower())
-  print(f"  HA entities shown: {min(len(rows), limit)} / {len(rows)}")
-  for name, state, eid in rows[:limit]:
-    print(f"  - {name} | {state} | {eid}")' "$MAX_ROWS" <<<"$HA_STATES"
+limit=int(sys.argv[1])
+states=json.load(sys.stdin)
+preferred={"light","switch","climate","cover","sensor","binary_sensor"}
+rows=[]
+for item in states:
+  eid=item.get("entity_id", "")
+  if "." not in eid:
+    continue
+  domain,_=eid.split(".", 1)
+  if domain not in preferred:
+    continue
+  attrs=item.get("attributes") or {}
+  name=attrs.get("friendly_name") or eid
+  rows.append((name, item.get("state", "unknown"), eid))
+rows.sort(key=lambda x: x[0].lower())
+print(f"  HA entities shown: {min(len(rows), limit)} / {len(rows)}")
+for name, state, eid in rows[:limit]:
+  print(f"  - {name} | {state} | {eid}")' "$MAX_ROWS" <<<"$HA_STATES"
   done
 fi
 
