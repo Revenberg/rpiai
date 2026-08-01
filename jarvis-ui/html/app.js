@@ -110,6 +110,13 @@ function appendChatMessage(who, text, time = null, options = {}) {
   return row;
 }
 
+function ensureChatAtBottom() {
+  if (!chatLogEl) {
+    return;
+  }
+  chatLogEl.scrollTop = chatLogEl.scrollHeight;
+}
+
 function updateChatMessage(row, who, text, time = null, options = {}) {
   if (!row) {
     return;
@@ -945,6 +952,7 @@ async function initCamera() {
 
 renderPresence();
 renderMessages();
+requestAnimationFrame(ensureChatAtBottom);
 renderActions();
 renderNav();
 updateClock();

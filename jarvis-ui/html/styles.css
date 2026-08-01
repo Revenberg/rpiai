@@ -596,8 +596,8 @@ h3 {
   gap: 6px;
   padding-right: 3px;
   padding-bottom: 8px;
-  min-height: 21rem;
-  max-height: 21rem;
+  min-height: 16rem;
+  max-height: 16rem;
   scroll-behavior: smooth;
 }
 
