@@ -1,4 +1,27 @@
 services:
+  camera:
+    image: alexxit/go2rtc:latest
+    container_name: camera
+    restart: unless-stopped
+    ports:
+      - "1984:1984"
+      - "8554:8554"
+      - "8555:8555"
+      - "8555:8555/udp"
+    volumes:
+      - ./camera/go2rtc.yaml:/config/go2rtc.yaml:ro
+      - /dev/video0:/dev/video0
+    devices:
+      - /dev/video0:/dev/video0
+
+  jarvis-ui:
+    build:
+      context: ./jarvis-ui
+    container_name: jarvis-ui
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+
   rpi-monitor:
     image: nicolargo/glances:4.3.1
     container_name: rpi-monitor
