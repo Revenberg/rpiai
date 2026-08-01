@@ -606,6 +606,21 @@ h3 {
   background: rgba(10, 18, 11, 0.62);
 }
 
+.msg.msg-error {
+  border-color: rgba(220, 92, 92, 0.55);
+  background: rgba(46, 14, 14, 0.72);
+}
+
+.msg.msg-error .msg-avatar {
+  background: linear-gradient(140deg, #f08989, #7f2525);
+}
+
+.msg.msg-error .msg-meta,
+.msg.msg-error strong,
+.msg.msg-error div {
+  color: #ffd1d1;
+}
+
 .msg-avatar {
   width: 26px;
   height: 26px;

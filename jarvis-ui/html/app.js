@@ -87,7 +87,7 @@ function escapeHtml(text) {
     .replace(/'/g, "&#39;");
 }
 
-function appendChatMessage(who, text, time = null) {
+function appendChatMessage(who, text, time = null, options = {}) {
   if (!chatLogEl) {
     return null;
   }
@@ -96,7 +96,7 @@ function appendChatMessage(who, text, time = null) {
   const avatar = who === "Jij" ? "J" : "S";
 
   const row = document.createElement("article");
-  row.className = "msg";
+  row.className = `msg${options.isError ? " msg-error" : ""}`;
   row.innerHTML = `
     <div class="msg-avatar">${avatar}</div>
     <div>
@@ -110,13 +110,14 @@ function appendChatMessage(who, text, time = null) {
   return row;
 }
 
-function updateChatMessage(row, who, text, time = null) {
+function updateChatMessage(row, who, text, time = null, options = {}) {
   if (!row) {
     return;
   }
 
   const msgTime = time || new Date().toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   const avatar = who === "Jij" ? "J" : "S";
+  row.className = `msg${options.isError ? " msg-error" : ""}`;
   row.innerHTML = `
     <div class="msg-avatar">${avatar}</div>
     <div>
@@ -169,8 +170,10 @@ function extractTextFromContent(content) {
 function extractSamathaReply(data) {
   const candidates = [
     data?.choices?.[0]?.message?.content,
+    data?.choices?.[0]?.text,
     data?.choices?.[0]?.delta?.content,
     data?.message?.content,
+    data?.message,
     data?.response,
     data?.output_text,
     data?.reply,
@@ -186,7 +189,12 @@ function extractSamathaReply(data) {
     }
   }
 
-  return "Ik heb je bericht ontvangen, maar ik kon geen antwoordtekst uitlezen.";
+  try {
+    const preview = JSON.stringify(data).slice(0, 240);
+    return `Ik kreeg wel een response, maar zonder herkenbare antwoordtekst. Debug: ${preview}`;
+  } catch {
+    return "Ik heb je bericht ontvangen, maar ik kon geen antwoordtekst uitlezen.";
+  }
 }
 
 async function sendTextToSamatha(text) {
@@ -203,7 +211,20 @@ async function sendTextToSamatha(text) {
   });
 
   if (!res.ok) {
-    throw new Error(`Samatha API fout (${res.status})`);
+    let detail = "";
+    try {
+      const contentType = res.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        const errJson = await res.json();
+        detail = errJson?.detail || errJson?.error || "";
+      } else {
+        const errText = await res.text();
+        detail = (errText || "").slice(0, 160);
+      }
+    } catch {
+      detail = "";
+    }
+    throw new Error(detail ? `Samatha API fout (${res.status}): ${detail}` : `Samatha API fout (${res.status})`);
   }
 
   const data = await res.json();
@@ -238,7 +259,8 @@ async function handleSamathaInputSubmit() {
       speechEl.textContent = "Samantha heeft geantwoord";
     }
   } catch (err) {
-    updateChatMessage(pendingReplyRow, "Samantha", "Ik kan nu niet antwoorden. Controleer of Samatha online is.");
+    const errorText = err instanceof Error ? err.message : "Onbekende fout";
+    updateChatMessage(pendingReplyRow, "Samantha", `Fout: ${errorText}`, null, { isError: true });
     if (speechEl) {
       speechEl.textContent = "Samantha is niet bereikbaar";
     }
