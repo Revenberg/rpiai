@@ -1,6 +1,7 @@
 const presenceListEl = document.getElementById("presenceList");
 const chatLogEl = document.getElementById("chatLog");
 const chatCounterEl = document.getElementById("chatCounter");
+const uiVersionEl = document.getElementById("uiVersion");
 const actionLogEl = document.getElementById("actionLog");
 const bottomNavEl = document.getElementById("bottomNav");
 const clockEl = document.getElementById("clockLabel");
@@ -54,9 +55,14 @@ const fallbackActions = [
 const navItems = ["OVERZICHT", "VERLICHTING", "KLIMAAT", "BEVEILIGING", "ENERGIE", "MEDIA", "INSTELLINGEN"];
 const speechStates = ["Ik luister...", "Commando ontvangen", "Samantha verwerkt actie", "Systeem standby"];
 const MAX_VISIBLE_CHAT_MESSAGES = 12;
+const JARVIS_UI_VERSION = "2026-08-01.2";
 let lastSuccessfulTestSignature = null;
 let lastSuccessfulTestResult = null;
 let presetListCache = [];
+
+if (uiVersionEl) {
+  uiVersionEl.textContent = `UI v${JARVIS_UI_VERSION}`;
+}
 
 function pruneChatMessages() {
   if (!chatLogEl) {
