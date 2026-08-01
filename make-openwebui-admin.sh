@@ -1,4 +1,5 @@
 #!/bin/sh
+set -eu
 
 DB="/app/backend/data/webui.db"
 ENV_FILE="/work/.env"
@@ -24,77 +25,80 @@ if ! command -v python3 >/dev/null 2>&1; then
     exit 1
 fi
 
-echo "bcrypt hash maken..."
+if command -v sqlite3 >/dev/null 2>&1; then
+    echo "bcrypt hash maken..."
 
-HASH=$(python3 - <<EOF
+    HASH=$(python3 - <<EOF
 import bcrypt
 print(bcrypt.hashpw(b"$PASSWORD", bcrypt.gensalt()).decode())
 EOF
 )
 
-if [ -z "$HASH" ]; then
-    echo "Fout: kon bcrypt hash niet genereren."
-    exit 1
+    if [ -z "$HASH" ]; then
+        echo "Fout: kon bcrypt hash niet genereren."
+        exit 1
+    fi
+
+    echo "Bestaande gebruiker verwijderen..."
+
+    sqlite3 "$DB" "
+    DELETE FROM auth WHERE email='$EMAIL';
+    DELETE FROM user WHERE email='$EMAIL';
+    " || true
+
+    NOW=$(date +%s)
+    ID=$(cat /proc/sys/kernel/random/uuid)
+
+    echo "Auth toevoegen..."
+
+    sqlite3 "$DB" "
+    INSERT INTO auth
+    (
+    id,
+    email,
+    password,
+    active
+    )
+    VALUES
+    (
+    '$ID',
+    '$EMAIL',
+    '$HASH',
+    1
+    );
+    "
+
+    echo "User toevoegen..."
+
+    sqlite3 "$DB" "
+    INSERT INTO user
+    (
+    id,
+    name,
+    email,
+    role,
+    profile_image_url,
+    created_at,
+    updated_at,
+    last_active_at,
+    username
+    )
+    VALUES
+    (
+    '$ID',
+    '$NAME',
+    '$EMAIL',
+    'admin',
+    '/user.png',
+    $NOW,
+    $NOW,
+    $NOW,
+    '$USERNAME'
+    );
+    "
+else
+    echo "Waarschuwing: sqlite3 niet gevonden, DB user reset/create wordt overgeslagen."
 fi
-
-echo "Bestaande gebruiker verwijderen..."
-
-sqlite3 "$DB" "
-DELETE FROM auth WHERE email='$EMAIL';
-DELETE FROM user WHERE email='$EMAIL';
-" || true
-
-NOW=$(date +%s)
-ID=$(cat /proc/sys/kernel/random/uuid)
-
-
-echo "Auth toevoegen..."
-
-sqlite3 "$DB" "
-INSERT INTO auth
-(
-id,
-email,
-password,
-active
-)
-VALUES
-(
-'$ID',
-'$EMAIL',
-'$HASH',
-1
-);
-"
-
-echo "User toevoegen..."
-
-sqlite3 "$DB" "
-INSERT INTO user
-(
-id,
-name,
-email,
-role,
-profile_image_url,
-created_at,
-updated_at,
-last_active_at,
-username
-)
-VALUES
-(
-'$ID',
-'$NAME',
-'$EMAIL',
-'admin',
-'/user.png',
-$NOW,
-$NOW,
-$NOW,
-'$USERNAME'
-);
-"
 
 echo "API key opvragen via Open WebUI API..."
 API_KEY=$(python3 - <<EOF
@@ -180,19 +184,32 @@ if [ -z "$API_KEY" ] || [ "$API_KEY" = "SIGNIN_FAILED" ] || [ "$API_KEY" = "API_
 fi
 
 echo "Controle:"
-sqlite3 "$DB" \
-"SELECT name,email,role FROM user WHERE email='$EMAIL';"
+if command -v sqlite3 >/dev/null 2>&1; then
+    sqlite3 "$DB" \
+    "SELECT name,email,role FROM user WHERE email='$EMAIL';"
+fi
 
 echo "API key voor $EMAIL:"
 echo "$API_KEY"
 
 if [ -f "$ENV_FILE" ]; then
     echo "SAMATHA_API_KEY opslaan in .env voor Caddy/Jarvis..."
-    if grep -q '^SAMATHA_API_KEY=' "$ENV_FILE"; then
-        sed -i "s|^SAMATHA_API_KEY=.*|SAMATHA_API_KEY=$API_KEY|" "$ENV_FILE"
-    else
-        printf "\nSAMATHA_API_KEY=%s\n" "$API_KEY" >> "$ENV_FILE"
-    fi
+    python3 - <<EOF
+from pathlib import Path
+
+env_file = Path("$ENV_FILE")
+api_key = "$API_KEY"
+lines = env_file.read_text(encoding="utf-8").splitlines() if env_file.exists() else []
+updated = False
+for i, line in enumerate(lines):
+    if line.startswith("SAMATHA_API_KEY="):
+        lines[i] = f"SAMATHA_API_KEY={api_key}"
+        updated = True
+        break
+if not updated:
+    lines.append(f"SAMATHA_API_KEY={api_key}")
+env_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+EOF
     echo "SAMATHA_API_KEY bijgewerkt in .env"
 else
     echo "Waarschuwing: $ENV_FILE niet gevonden, .env niet bijgewerkt"
