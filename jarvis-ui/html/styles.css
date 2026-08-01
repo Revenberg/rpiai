@@ -589,10 +589,16 @@ h3 {
 }
 
 .chat-log {
-  overflow: auto;
-  display: grid;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
   gap: 6px;
   padding-right: 3px;
+  padding-bottom: 8px;
+  min-height: 21rem;
+  max-height: 21rem;
+  scroll-behavior: smooth;
 }
 
 .msg {
