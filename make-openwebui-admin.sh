@@ -1,6 +1,7 @@
 #!/bin/sh
 
 DB="/app/backend/data/webui.db"
+ENV_FILE="/work/.env"
 
 EMAIL="pi@home.com"
 NAME="Pi Admin"
@@ -131,6 +132,18 @@ sqlite3 "$DB" \
 
 echo "API key voor $EMAIL:"
 echo "$API_KEY"
+
+if [ -f "$ENV_FILE" ]; then
+    echo "SAMATHA_API_KEY opslaan in .env voor Caddy/Jarvis..."
+    if grep -q '^SAMATHA_API_KEY=' "$ENV_FILE"; then
+        sed -i "s|^SAMATHA_API_KEY=.*|SAMATHA_API_KEY=$API_KEY|" "$ENV_FILE"
+    else
+        printf "\nSAMATHA_API_KEY=%s\n" "$API_KEY" >> "$ENV_FILE"
+    fi
+    echo "SAMATHA_API_KEY bijgewerkt in .env"
+else
+    echo "Waarschuwing: $ENV_FILE niet gevonden, .env niet bijgewerkt"
+fi
 
 echo "Klaar"
 

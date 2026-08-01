@@ -211,6 +211,7 @@ services:
       - "443:443"
     environment:
       CADDY_SITE_ADDRESS: ${CADDY_SITE_ADDRESS:-localhost}
+      SAMATHA_API_KEY: ${SAMATHA_API_KEY:-}
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -333,7 +334,7 @@ services:
       start_period: 120s
 
   openwebui-admin-init:
-    image: keinos/sqlite3
+    image: ${OPEN_WEBUI_IMAGE:-ghcr.io/open-webui/open-webui:latest}
     container_name: openwebui-admin-init
     depends_on:
       samatha-ai:
@@ -343,6 +344,7 @@ services:
       - samatha-ai
     volumes:
       - ./make-openwebui-admin.sh:/make-openwebui-admin.sh:ro
+      - ./.env:/work/.env
     entrypoint: ["/bin/sh", "/make-openwebui-admin.sh"]
     restart: "no"
 

@@ -196,7 +196,7 @@ async function sendTextToSamatha(text) {
     stream: false
   };
 
-  const res = await fetch("/api/chat/completions", {
+  const res = await fetch("/jarvis/api/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
