@@ -8,6 +8,7 @@ SAMATHA_BASE_URL="${SAMATHA_BASE_URL:-https://rpiai.local}"
 SAMATHA_EMAIL="${SAMATHA_EMAIL:-pi@home.com}"
 SAMATHA_PASSWORD="${SAMATHA_PASSWORD:-admin}"
 SAMATHA_MODEL="${SAMATHA_MODEL:-qwen2.5:0.5b}"
+SAMATHA_CHAT_TIMEOUT="${SAMATHA_CHAT_TIMEOUT:-45}"
 CONFIG_FILE="${CONFIG_FILE:-$REPO_ROOT/automation-mcp-server/config.yaml}"
 MAX_ROWS="${MAX_ROWS:-8}"
 
@@ -124,8 +125,27 @@ print(json.dumps({
 PY
 )
 
-CHAT_RESPONSE=$(curl -kfsS -X POST "$SAMATHA_BASE_URL/jarvis/api/chat/completions" -H "Content-Type: application/json" -d "$CHAT_JSON")
-python3 -c 'import json,sys
+CHAT_RESPONSE=""
+CHAT_ENDPOINT_USED=""
+
+if CHAT_RESPONSE=$(curl -kfsS --connect-timeout 6 --max-time "$SAMATHA_CHAT_TIMEOUT" \
+  -X POST "$SAMATHA_BASE_URL/jarvis/api/chat/completions" \
+  -H "Content-Type: application/json" \
+  -d "$CHAT_JSON"); then
+  CHAT_ENDPOINT_USED="/jarvis/api/chat/completions"
+elif CHAT_RESPONSE=$(curl -kfsS --connect-timeout 6 --max-time "$SAMATHA_CHAT_TIMEOUT" \
+  -X POST "$SAMATHA_BASE_URL/api/chat/completions" \
+  -H "Authorization: Bearer $SAMATHA_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "$CHAT_JSON"); then
+  CHAT_ENDPOINT_USED="/api/chat/completions"
+else
+  echo "WAARSCHUWING: Samantha chat endpoint timeout/fout na ${SAMATHA_CHAT_TIMEOUT}s. Ga door met directe Homey/HA checks."
+fi
+
+if [[ -n "$CHAT_RESPONSE" ]]; then
+  echo "Gebruikt endpoint: $CHAT_ENDPOINT_USED"
+  python3 -c 'import json,sys
 obj=json.load(sys.stdin)
 msg=""
 try:
@@ -133,6 +153,7 @@ try:
 except Exception:
   msg=""
 print(msg if msg else json.dumps(obj, indent=2, ensure_ascii=False))' <<<"$CHAT_RESPONSE"
+fi
 
 print_header "automation-mcp-server logs (laatste 2 minuten, tool calls)"
 docker compose logs --since 2m automation-mcp-server | grep -E 'homey\.|ha\.' || echo "Geen expliciete tool-call regels gevonden in dit interval."
