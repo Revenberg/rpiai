@@ -25,80 +25,58 @@ if ! command -v python3 >/dev/null 2>&1; then
     exit 1
 fi
 
-if command -v sqlite3 >/dev/null 2>&1; then
-    echo "bcrypt hash maken..."
-
-    HASH=$(python3 - <<EOF
+echo "Admin user reset/create via Python sqlite3..."
+python3 - <<EOF
+import sqlite3
+import time
+import uuid
 import bcrypt
-print(bcrypt.hashpw(b"$PASSWORD", bcrypt.gensalt()).decode())
-EOF
+import sys
+
+db = "$DB"
+email = "$EMAIL"
+name = "$NAME"
+username = "$USERNAME"
+password = "$PASSWORD"
+
+con = sqlite3.connect(db)
+cur = con.cursor()
+
+cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+tables = {r[0] for r in cur.fetchall()}
+
+if "auth" not in tables or "user" not in tables:
+    print("Fout: vereiste tabellen auth/user ontbreken in webui.db")
+    sys.exit(1)
+
+now = int(time.time())
+uid = str(uuid.uuid4())
+hash_pw = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+cur.execute("DELETE FROM auth WHERE email=?", (email,))
+cur.execute("DELETE FROM user WHERE email=?", (email,))
+
+cur.execute(
+    "INSERT INTO auth (id, email, password, active) VALUES (?, ?, ?, 1)",
+    (uid, email, hash_pw),
 )
 
-    if [ -z "$HASH" ]; then
-        echo "Fout: kon bcrypt hash niet genereren."
-        exit 1
-    fi
-
-    echo "Bestaande gebruiker verwijderen..."
-
-    sqlite3 "$DB" "
-    DELETE FROM auth WHERE email='$EMAIL';
-    DELETE FROM user WHERE email='$EMAIL';
-    " || true
-
-    NOW=$(date +%s)
-    ID=$(cat /proc/sys/kernel/random/uuid)
-
-    echo "Auth toevoegen..."
-
-    sqlite3 "$DB" "
-    INSERT INTO auth
-    (
-    id,
-    email,
-    password,
-    active
-    )
-    VALUES
-    (
-    '$ID',
-    '$EMAIL',
-    '$HASH',
-    1
-    );
-    "
-
-    echo "User toevoegen..."
-
-    sqlite3 "$DB" "
+cur.execute(
+    """
     INSERT INTO user
-    (
-    id,
-    name,
-    email,
-    role,
-    profile_image_url,
-    created_at,
-    updated_at,
-    last_active_at,
-    username
-    )
-    VALUES
-    (
-    '$ID',
-    '$NAME',
-    '$EMAIL',
-    'admin',
-    '/user.png',
-    $NOW,
-    $NOW,
-    $NOW,
-    '$USERNAME'
-    );
-    "
-else
-    echo "Waarschuwing: sqlite3 niet gevonden, DB user reset/create wordt overgeslagen."
-fi
+    (id, name, email, role, profile_image_url, created_at, updated_at, last_active_at, username)
+    VALUES (?, ?, ?, 'admin', '/user.png', ?, ?, ?, ?)
+    """,
+    (uid, name, email, now, now, now, username),
+)
+
+con.commit()
+
+cur.execute("SELECT name,email,role FROM user WHERE email=?", (email,))
+row = cur.fetchone()
+print("Controle:", row if row else "niet gevonden")
+con.close()
+EOF
 
 echo "API key opvragen via Open WebUI API..."
 API_KEY=$(python3 - <<EOF
@@ -181,12 +159,6 @@ EOF
 if [ -z "$API_KEY" ] || [ "$API_KEY" = "SIGNIN_FAILED" ] || [ "$API_KEY" = "API_KEY_FAILED" ]; then
     echo "Fout: kon geen geldige API key ophalen via Open WebUI API."
     exit 1
-fi
-
-echo "Controle:"
-if command -v sqlite3 >/dev/null 2>&1; then
-    sqlite3 "$DB" \
-    "SELECT name,email,role FROM user WHERE email='$EMAIL';"
 fi
 
 echo "API key voor $EMAIL:"
