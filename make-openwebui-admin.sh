@@ -1,6 +1,9 @@
 #!/bin/sh
 set -eu
 
+SCRIPT_VERSION="2026-08-01.1"
+echo "[openwebui-admin-init] script version: $SCRIPT_VERSION"
+
 DB="/app/backend/data/webui.db"
 ENV_FILE="/work/.env"
 SAMATHA_API_BASE_URL="${SAMATHA_API_BASE_URL:-http://samatha-ai:8080}"
