@@ -16,6 +16,16 @@
         reverse_proxy repo-readme-ui:80
     }
 
+    handle /jarvis* {
+        uri strip_prefix /jarvis
+        reverse_proxy jarvis-ui:80
+    }
+
+    handle /action-hub* {
+        uri strip_prefix /action-hub
+        reverse_proxy action-hub:3002
+    }
+
     handle {
         reverse_proxy repo-readme-ui:80
     }
@@ -34,6 +44,16 @@ rpiai.local {
     handle /readme* {
         uri strip_prefix /readme
         reverse_proxy repo-readme-ui:80
+    }
+
+    handle /jarvis* {
+        uri strip_prefix /jarvis
+        reverse_proxy jarvis-ui:80
+    }
+
+    handle /action-hub* {
+        uri strip_prefix /action-hub
+        reverse_proxy action-hub:3002
     }
 
     # Alles overig naar Open WebUI

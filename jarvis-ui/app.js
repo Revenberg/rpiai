@@ -224,7 +224,7 @@ function renderActions() {
 function getActionHubBaseUrl() {
   const protocol = window.location.protocol === "https:" ? "https:" : "http:";
   const hostName = window.location.hostname || "localhost";
-  return `${protocol}//${hostName}:3002`;
+  return `${protocol}//${hostName}/action-hub`;
 }
 
 function formatActionTime(raw) {
