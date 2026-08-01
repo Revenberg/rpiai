@@ -1,5 +1,6 @@
 const presenceListEl = document.getElementById("presenceList");
 const chatLogEl = document.getElementById("chatLog");
+const chatTitleEl = document.querySelector(".chat h3");
 const actionLogEl = document.getElementById("actionLog");
 const bottomNavEl = document.getElementById("bottomNav");
 const clockEl = document.getElementById("clockLabel");
@@ -52,9 +53,30 @@ const fallbackActions = [
 
 const navItems = ["OVERZICHT", "VERLICHTING", "KLIMAAT", "BEVEILIGING", "ENERGIE", "MEDIA", "INSTELLINGEN"];
 const speechStates = ["Ik luister...", "Commando ontvangen", "Samantha verwerkt actie", "Systeem standby"];
+const MAX_VISIBLE_CHAT_MESSAGES = 12;
 let lastSuccessfulTestSignature = null;
 let lastSuccessfulTestResult = null;
 let presetListCache = [];
+
+function pruneChatMessages() {
+  if (!chatLogEl) {
+    return;
+  }
+
+  while (chatLogEl.children.length > MAX_VISIBLE_CHAT_MESSAGES) {
+    chatLogEl.removeChild(chatLogEl.firstElementChild);
+  }
+
+  updateChatCounter();
+}
+
+function updateChatCounter() {
+  if (!chatTitleEl || !chatLogEl) {
+    return;
+  }
+
+  chatTitleEl.textContent = `GESPREK (${chatLogEl.children.length}/${MAX_VISIBLE_CHAT_MESSAGES} zichtbaar)`;
+}
 
 function initials(name) {
   return name.slice(0, 1);
@@ -106,6 +128,7 @@ function appendChatMessage(who, text, time = null, options = {}) {
     <span class="msg-meta">${escapeHtml(msgTime)}</span>
   `;
   chatLogEl.appendChild(row);
+  pruneChatMessages();
   chatLogEl.scrollTop = chatLogEl.scrollHeight;
   return row;
 }
@@ -952,6 +975,7 @@ async function initCamera() {
 
 renderPresence();
 renderMessages();
+updateChatCounter();
 requestAnimationFrame(ensureChatAtBottom);
 renderActions();
 renderNav();
