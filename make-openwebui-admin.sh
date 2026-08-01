@@ -2,6 +2,7 @@
 
 DB="/app/backend/data/webui.db"
 ENV_FILE="/work/.env"
+SAMATHA_API_BASE_URL="${SAMATHA_API_BASE_URL:-http://samatha-ai:8080}"
 
 EMAIL="pi@home.com"
 NAME="Pi Admin"
@@ -36,17 +37,6 @@ if [ -z "$HASH" ]; then
     exit 1
 fi
 
-API_KEY=$(python3 - <<EOF
-import secrets
-print(secrets.token_urlsafe(32))
-EOF
-)
-
-if [ -z "$API_KEY" ]; then
-    echo "Fout: kon API key niet genereren."
-    exit 1
-fi
-
 echo "Bestaande gebruiker verwijderen..."
 
 sqlite3 "$DB" "
@@ -77,16 +67,6 @@ VALUES
 );
 "
 
-if sqlite3 "$DB" "PRAGMA table_info(auth);" | grep -q "|api_key|"; then
-    echo "API key toevoegen aan auth..."
-    sqlite3 "$DB" "
-    UPDATE auth
-    SET api_key='$API_KEY'
-    WHERE email='$EMAIL';
-    "
-fi
-
-
 echo "User toevoegen..."
 
 sqlite3 "$DB" "
@@ -116,15 +96,88 @@ $NOW,
 );
 "
 
-if sqlite3 "$DB" "PRAGMA table_info(user);" | grep -q "|api_key|"; then
-    echo "API key toevoegen aan user..."
-    sqlite3 "$DB" "
-    UPDATE user
-    SET api_key='$API_KEY'
-    WHERE email='$EMAIL';
-    "
-fi
+echo "API key opvragen via Open WebUI API..."
+API_KEY=$(python3 - <<EOF
+import json
+import urllib.error
+import urllib.request
 
+base = "${SAMATHA_API_BASE_URL}".rstrip("/")
+email = "${EMAIL}"
+password = "${PASSWORD}"
+
+def request_json(url, method="GET", headers=None, body=None):
+    req = urllib.request.Request(url, method=method)
+    for k, v in (headers or {}).items():
+        req.add_header(k, v)
+    data = None
+    if body is not None:
+        data = json.dumps(body).encode("utf-8")
+    try:
+        with urllib.request.urlopen(req, data=data, timeout=20) as resp:
+            raw = resp.read().decode("utf-8")
+            return resp.status, json.loads(raw) if raw else {}
+    except urllib.error.HTTPError as e:
+        raw = e.read().decode("utf-8")
+        try:
+            payload = json.loads(raw) if raw else {}
+        except Exception:
+            payload = {"raw": raw}
+        return e.code, payload
+
+status, signin = request_json(
+    f"{base}/api/v1/auths/signin",
+    method="POST",
+    headers={"Content-Type": "application/json"},
+    body={"email": email, "password": password},
+)
+
+token = (
+    signin.get("token")
+    or signin.get("access_token")
+    or (signin.get("data") or {}).get("token")
+)
+
+if status != 200 or not token:
+    raise SystemExit("SIGNIN_FAILED")
+
+headers = {"Authorization": f"Bearer {token}"}
+
+status_post, key_post = request_json(
+    f"{base}/api/v1/auths/api_key",
+    method="POST",
+    headers=headers,
+)
+
+api_key = (
+    key_post.get("api_key")
+    or key_post.get("key")
+    or (key_post.get("data") or {}).get("api_key")
+)
+
+if not api_key:
+    status_get, key_get = request_json(
+        f"{base}/api/v1/auths/api_key",
+        method="GET",
+        headers=headers,
+    )
+    api_key = (
+        key_get.get("api_key")
+        or key_get.get("key")
+        or (key_get.get("data") or {}).get("api_key")
+    )
+
+if not api_key:
+    raise SystemExit("API_KEY_FAILED")
+
+print(api_key)
+EOF
+)
+
+if [ -z "$API_KEY" ] || [ "$API_KEY" = "SIGNIN_FAILED" ] || [ "$API_KEY" = "API_KEY_FAILED" ]; then
+    echo "Fout: kon geen geldige API key ophalen via Open WebUI API."
+    exit 1
+fi
 
 echo "Controle:"
 sqlite3 "$DB" \
