@@ -16,13 +16,11 @@ done
 
 echo "Database gevonden"
 
-echo "Bestaande gebruiker verwijderen..."
-
-sqlite3 "$DB" "
-DELETE FROM auth WHERE email='$EMAIL';
-DELETE FROM user WHERE email='$EMAIL';
-" || true
-
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "Fout: python3 niet gevonden in deze container."
+    echo "Gebruik een image met python3 (of voer dit script in samatha-ai uit)."
+    exit 1
+fi
 
 echo "bcrypt hash maken..."
 
@@ -32,11 +30,28 @@ print(bcrypt.hashpw(b"$PASSWORD", bcrypt.gensalt()).decode())
 EOF
 )
 
+if [ -z "$HASH" ]; then
+    echo "Fout: kon bcrypt hash niet genereren."
+    exit 1
+fi
+
 API_KEY=$(python3 - <<EOF
 import secrets
 print(secrets.token_urlsafe(32))
 EOF
 )
+
+if [ -z "$API_KEY" ]; then
+    echo "Fout: kon API key niet genereren."
+    exit 1
+fi
+
+echo "Bestaande gebruiker verwijderen..."
+
+sqlite3 "$DB" "
+DELETE FROM auth WHERE email='$EMAIL';
+DELETE FROM user WHERE email='$EMAIL';
+" || true
 
 NOW=$(date +%s)
 ID=$(cat /proc/sys/kernel/random/uuid)
