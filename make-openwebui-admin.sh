@@ -152,6 +152,12 @@ if not api_key:
         or (key_get.get("data") or {}).get("api_key")
     )
 
+# Some Open WebUI environments disable API key creation.
+# In that case, fall back to a valid bearer session token.
+if not api_key and status_post == 403:
+    print(token)
+    raise SystemExit(0)
+
 if not api_key:
     raise SystemExit("API_KEY_FAILED")
 
