@@ -89,7 +89,7 @@ function escapeHtml(text) {
 
 function appendChatMessage(who, text, time = null) {
   if (!chatLogEl) {
-    return;
+    return null;
   }
 
   const msgTime = time || new Date().toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
@@ -107,17 +107,46 @@ function appendChatMessage(who, text, time = null) {
   `;
   chatLogEl.appendChild(row);
   chatLogEl.scrollTop = chatLogEl.scrollHeight;
+  return row;
 }
 
-function extractSamathaReply(data) {
-  const content = data?.choices?.[0]?.message?.content;
+function updateChatMessage(row, who, text, time = null) {
+  if (!row) {
+    return;
+  }
+
+  const msgTime = time || new Date().toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const avatar = who === "Jij" ? "J" : "S";
+  row.innerHTML = `
+    <div class="msg-avatar">${avatar}</div>
+    <div>
+      <strong>${escapeHtml(who)}</strong>
+      <div>${escapeHtml(text)}</div>
+    </div>
+    <span class="msg-meta">${escapeHtml(msgTime)}</span>
+  `;
+  chatLogEl?.scrollTo({ top: chatLogEl.scrollHeight, behavior: "smooth" });
+}
+
+function extractTextFromContent(content) {
   if (typeof content === "string" && content.trim()) {
     return content.trim();
   }
 
   if (Array.isArray(content)) {
     const parts = content
-      .map((part) => (typeof part?.text === "string" ? part.text : ""))
+      .map((part) => {
+        if (typeof part === "string") {
+          return part;
+        }
+        if (typeof part?.text === "string") {
+          return part.text;
+        }
+        if (typeof part?.content === "string") {
+          return part.content;
+        }
+        return "";
+      })
       .join(" ")
       .trim();
     if (parts) {
@@ -125,8 +154,36 @@ function extractSamathaReply(data) {
     }
   }
 
-  if (typeof data?.response === "string" && data.response.trim()) {
-    return data.response.trim();
+  if (content && typeof content === "object") {
+    if (typeof content.text === "string" && content.text.trim()) {
+      return content.text.trim();
+    }
+    if (typeof content.content === "string" && content.content.trim()) {
+      return content.content.trim();
+    }
+  }
+
+  return "";
+}
+
+function extractSamathaReply(data) {
+  const candidates = [
+    data?.choices?.[0]?.message?.content,
+    data?.choices?.[0]?.delta?.content,
+    data?.message?.content,
+    data?.response,
+    data?.output_text,
+    data?.reply,
+    data?.result?.message,
+    data?.result?.text,
+    data?.data?.message
+  ];
+
+  for (const candidate of candidates) {
+    const text = extractTextFromContent(candidate);
+    if (text) {
+      return text;
+    }
   }
 
   return "Ik heb je bericht ontvangen, maar ik kon geen antwoordtekst uitlezen.";
@@ -169,17 +226,25 @@ async function handleSamathaInputSubmit() {
     samathaSendBtnEl.disabled = true;
   }
   appendChatMessage("Jij", text);
-  speechEl.textContent = "Samantha verwerkt je bericht...";
+  const pendingReplyRow = appendChatMessage("Samantha", "Samantha is aan het typen...");
+  if (speechEl) {
+    speechEl.textContent = "Samantha verwerkt je bericht...";
+  }
 
   try {
     const reply = await sendTextToSamatha(text);
-    appendChatMessage("Samantha", reply);
-    speechEl.textContent = "Samantha heeft geantwoord";
+    updateChatMessage(pendingReplyRow, "Samantha", reply);
+    if (speechEl) {
+      speechEl.textContent = "Samantha heeft geantwoord";
+    }
   } catch (err) {
-    appendChatMessage("Samantha", "Ik kan nu niet antwoorden. Controleer of Samatha online is.");
-    speechEl.textContent = "Samantha is niet bereikbaar";
+    updateChatMessage(pendingReplyRow, "Samantha", "Ik kan nu niet antwoorden. Controleer of Samatha online is.");
+    if (speechEl) {
+      speechEl.textContent = "Samantha is niet bereikbaar";
+    }
     console.error(err);
   } finally {
+    samathaInputEl.value = "";
     samathaInputEl.disabled = false;
     if (samathaSendBtnEl) {
       samathaSendBtnEl.disabled = false;
@@ -679,8 +744,12 @@ function updateClock() {
     .toLocaleDateString("nl-NL", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })
     .toUpperCase();
   const timeText = now.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-  dayEl.textContent = dateText;
-  clockEl.textContent = timeText;
+  if (dayEl) {
+    dayEl.textContent = dateText;
+  }
+  if (clockEl) {
+    clockEl.textContent = timeText;
+  }
 }
 
 let speechIndex = 0;
