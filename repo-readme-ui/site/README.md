@@ -29,7 +29,7 @@ rpiai.local
 | --------------------------------- | ------------------------------------------------------------ | ------------- |
 | Repository README UI via Caddy    | [`https://<RPi-IP>/`](https://192.168.1.1)                   | 80            |
 | Repository README UI via Caddy    | [`https://<RPi-DNS>/readme`](https://rpiai.local/readme)     | 80            |
-| Jarvis UI via Caddy               | [`https://<RPi-DNS>/jarvis`](https://rpiai.local/jarvis>     | 8081          |
+| Jarvis UI via Caddy               | [`https://<RPi-DNS>/jarvis`](https://rpiai.local/jarvis)     | 8081          |
 | Samatha AI / Open WebUI via Caddy | [`https://<RPi-DNS>/`](https://rpiai.local/)                 | 8080          |
 | RPi Monitor (Glances) via Caddy   | [`https://<RPi-DNS>/monitor/`](https://rpiai.local/monitor/) | 61208         |
 

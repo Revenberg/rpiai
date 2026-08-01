@@ -1,7 +1,18 @@
-{
-    auto_https off
+#{
+ #   auto_https off
+#}
+
+http://rpiai.local {
+    redir https://rpiai.local{uri} permanent
 }
 
+http://192.168.1.1 {
+    redir https://192.168.1.1{uri} permanent
+}
+
+http://192.168.1.2 {
+    redir https://192.168.1.1{uri} permanent
+}
 :443 {
 
     tls /etc/caddy/certs/ip.pem /etc/caddy/certs/ip-key.pem

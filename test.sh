@@ -3,6 +3,7 @@
 rm -f /tmp/caddy_test.html
 
 for url in \
+"http://192.168.1.1/" \
 "https://192.168.1.1/" \
 "https://rpiai.local/" \
 "https://rpiai.local/readme/" \
