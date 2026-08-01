@@ -1040,3 +1040,63 @@ h3 {
     font-size: 1.2rem;
   }
 }
+
+.camera-card {
+    overflow: hidden;
+}
+
+.camera-source {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.camera-source-btn {
+    background: transparent;
+    border: 1px solid #8fb087;
+    color: #8fb087;
+    padding: 4px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.camera-source-btn.active {
+    background: #8fb087;
+    color: #111;
+}
+
+.camera-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: 8px;
+    background: #000;
+}
+
+.camera-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.camera-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8fb087;
+    font-size: 14px;
+    background: rgba(0,0,0,0.4);
+    pointer-events: none;
+}
+
+#cameraState {
+    color: #8fb087;
+    font-size: 12px;
+}
