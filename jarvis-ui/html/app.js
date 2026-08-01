@@ -15,6 +15,8 @@ const actionNameInputEl = document.getElementById("actionNameInput");
 const actionTargetEl = document.getElementById("actionTarget");
 const actionCommandEl = document.getElementById("actionCommand");
 const actionPayloadEl = document.getElementById("actionPayload");
+const samathaInputEl = document.getElementById("samathaInput");
+const samathaSendBtnEl = document.getElementById("samathaSendBtn");
 const actionPresetSelectEl = document.getElementById("actionPresetSelect");
 const actionPresetNameEl = document.getElementById("actionPresetName");
 const savePresetBtnEl = document.getElementById("savePresetBtn");
@@ -72,17 +74,134 @@ function renderPresence() {
 
 function renderMessages() {
   messages.forEach((msg) => {
-    const row = document.createElement("article");
-    row.className = "msg";
-    row.innerHTML = `
-      <div class="msg-avatar">${msg.who === "Jij" ? "J" : "S"}</div>
-      <div>
-        <strong>${msg.who}</strong>
-        <div>${msg.text}</div>
-      </div>
-      <span class="msg-meta">${msg.time}</span>
-    `;
-    chatLogEl.appendChild(row);
+    appendChatMessage(msg.who, msg.text, msg.time);
+  });
+}
+
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function appendChatMessage(who, text, time = null) {
+  if (!chatLogEl) {
+    return;
+  }
+
+  const msgTime = time || new Date().toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const avatar = who === "Jij" ? "J" : "S";
+
+  const row = document.createElement("article");
+  row.className = "msg";
+  row.innerHTML = `
+    <div class="msg-avatar">${avatar}</div>
+    <div>
+      <strong>${escapeHtml(who)}</strong>
+      <div>${escapeHtml(text)}</div>
+    </div>
+    <span class="msg-meta">${escapeHtml(msgTime)}</span>
+  `;
+  chatLogEl.appendChild(row);
+  chatLogEl.scrollTop = chatLogEl.scrollHeight;
+}
+
+function extractSamathaReply(data) {
+  const content = data?.choices?.[0]?.message?.content;
+  if (typeof content === "string" && content.trim()) {
+    return content.trim();
+  }
+
+  if (Array.isArray(content)) {
+    const parts = content
+      .map((part) => (typeof part?.text === "string" ? part.text : ""))
+      .join(" ")
+      .trim();
+    if (parts) {
+      return parts;
+    }
+  }
+
+  if (typeof data?.response === "string" && data.response.trim()) {
+    return data.response.trim();
+  }
+
+  return "Ik heb je bericht ontvangen, maar ik kon geen antwoordtekst uitlezen.";
+}
+
+async function sendTextToSamatha(text) {
+  const payload = {
+    model: "qwen2.5:0.5b",
+    messages: [{ role: "user", content: text }],
+    stream: false
+  };
+
+  const res = await fetch("/api/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok) {
+    throw new Error(`Samatha API fout (${res.status})`);
+  }
+
+  const data = await res.json();
+  return extractSamathaReply(data);
+}
+
+async function handleSamathaInputSubmit() {
+  if (!samathaInputEl) {
+    return;
+  }
+
+  const text = samathaInputEl.value.trim();
+  if (!text) {
+    return;
+  }
+
+  samathaInputEl.value = "";
+  samathaInputEl.disabled = true;
+  if (samathaSendBtnEl) {
+    samathaSendBtnEl.disabled = true;
+  }
+  appendChatMessage("Jij", text);
+  speechEl.textContent = "Samantha verwerkt je bericht...";
+
+  try {
+    const reply = await sendTextToSamatha(text);
+    appendChatMessage("Samantha", reply);
+    speechEl.textContent = "Samantha heeft geantwoord";
+  } catch (err) {
+    appendChatMessage("Samantha", "Ik kan nu niet antwoorden. Controleer of Samatha online is.");
+    speechEl.textContent = "Samantha is niet bereikbaar";
+    console.error(err);
+  } finally {
+    samathaInputEl.disabled = false;
+    if (samathaSendBtnEl) {
+      samathaSendBtnEl.disabled = false;
+    }
+    samathaInputEl.focus();
+  }
+}
+
+function wireSamathaInput() {
+  if (!samathaInputEl) {
+    return;
+  }
+
+  samathaSendBtnEl?.addEventListener("click", () => {
+    handleSamathaInputSubmit();
+  });
+
+  samathaInputEl.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      handleSamathaInputSubmit();
+    }
   });
 }
 
@@ -741,6 +860,7 @@ updateClock();
 initCamera();
 loadActionsFromHub();
 wireActionBuilder();
+wireSamathaInput();
 
 setInterval(updateClock, 1000);
 setInterval(cycleSpeech, 3800);
