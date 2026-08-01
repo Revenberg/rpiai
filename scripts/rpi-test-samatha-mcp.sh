@@ -84,8 +84,8 @@ print_header "Container status"
 docker compose ps samatha-ai automation-mcp-server
 
 print_header "MCP server health/meta"
-curl -fsS "http://127.0.0.1:8090/health" | python3 -m json.tool
-curl -fsS "http://127.0.0.1:8090/meta" | python3 -m json.tool
+docker compose exec -T automation-mcp-server python -c 'import json, urllib.request; print(json.dumps(json.load(urllib.request.urlopen("http://127.0.0.1:8080/health", timeout=5)), indent=2, ensure_ascii=False))'
+docker compose exec -T automation-mcp-server python -c 'import json, urllib.request; print(json.dumps(json.load(urllib.request.urlopen("http://127.0.0.1:8080/meta", timeout=5)), indent=2, ensure_ascii=False))'
 
 print_header "Samantha API version"
 curl -kfsS "$SAMATHA_BASE_URL/api/version" | python3 -m json.tool
