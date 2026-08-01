@@ -82,6 +82,19 @@ body {
   text-align: right;
 }
 
+.ui-version {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(126, 177, 100, 0.55);
+  color: #c7e6b2;
+  background: rgba(30, 55, 25, 0.45);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+}
+
 .brand {
   font-family: "Orbitron", sans-serif;
   letter-spacing: 0.22em;
