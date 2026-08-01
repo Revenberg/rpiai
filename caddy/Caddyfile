@@ -16,13 +16,11 @@
         reverse_proxy repo-readme-ui:80
     }
 
-    handle /jarvis* {
-        uri strip_prefix /jarvis
+    handle_path /jarvis* {
         reverse_proxy jarvis-ui:80
     }
 
-    handle /action-hub* {
-        uri strip_prefix /action-hub
+    handle_path /action-hub* {
         reverse_proxy action-hub:3002
     }
 
@@ -46,13 +44,11 @@ rpiai.local {
         reverse_proxy repo-readme-ui:80
     }
 
-    handle /jarvis* {
-        uri strip_prefix /jarvis
+    handle_path /jarvis* {
         reverse_proxy jarvis-ui:80
     }
 
-    handle /action-hub* {
-        uri strip_prefix /action-hub
+    handle_path /action-hub* {
         reverse_proxy action-hub:3002
     }
 
