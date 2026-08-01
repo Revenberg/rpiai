@@ -32,6 +32,12 @@ print(bcrypt.hashpw(b"$PASSWORD", bcrypt.gensalt()).decode())
 EOF
 )
 
+API_KEY=$(python3 - <<EOF
+import secrets
+print(secrets.token_urlsafe(32))
+EOF
+)
+
 NOW=$(date +%s)
 ID=$(cat /proc/sys/kernel/random/uuid)
 
@@ -54,6 +60,15 @@ VALUES
 1
 );
 "
+
+if sqlite3 "$DB" "PRAGMA table_info(auth);" | grep -q "|api_key|"; then
+    echo "API key toevoegen aan auth..."
+    sqlite3 "$DB" "
+    UPDATE auth
+    SET api_key='$API_KEY'
+    WHERE email='$EMAIL';
+    "
+fi
 
 
 echo "User toevoegen..."
@@ -85,10 +100,22 @@ $NOW,
 );
 "
 
+if sqlite3 "$DB" "PRAGMA table_info(user);" | grep -q "|api_key|"; then
+    echo "API key toevoegen aan user..."
+    sqlite3 "$DB" "
+    UPDATE user
+    SET api_key='$API_KEY'
+    WHERE email='$EMAIL';
+    "
+fi
+
 
 echo "Controle:"
 sqlite3 "$DB" \
 "SELECT name,email,role FROM user WHERE email='$EMAIL';"
+
+echo "API key voor $EMAIL:"
+echo "$API_KEY"
 
 echo "Klaar"
 
